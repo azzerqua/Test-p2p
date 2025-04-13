@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>P2P Chat</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    input, button { margin: 0.5rem 0; padding: 0.5rem; }
+    #messages { border: 1px solid #ccc; padding: 1rem; height: 200px; overflow-y: auto; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h2>P2P Chat (via PeerJS)</h2>
+
+  <div>
+    <button onclick="createHost()">Créer une partie</button>
+    <br>
+    <div id="hostInfo"></div>
+    <hr>
+    <input type="text" id="joinId" placeholder="ID de la partie" />
+    <button onclick="joinHost()">Rejoindre</button>
+  </div>
+
+  <div id="chat" style="display:none;">
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Message..." />
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+
+  <script>
+    let peer, conn;
+
+    function createHost() {
+      peer = new Peer();
+      peer.on('open', (id) => {
+        document.getElementById('hostInfo').innerText = "Votre ID : " + id;
+      });
+
+      peer.on('connection', (c) => {
+        conn = c;
+        setupConnection();
+      });
+    }
+
+    function joinHost() {
+      const id = document.getElementById('joinId').value;
+      peer = new Peer();
+      conn = peer.connect(id);
+      conn.on('open', setupConnection);
+    }
+
+    function setupConnection() {
+      document.getElementById('chat').style.display = 'block';
+      conn.on('data', (data) => {
+        addMessage("Lui: " + data);
+      });
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value;
+      if (conn && text.trim()) {
+        conn.send(text);
+        addMessage("Moi: " + text);
+        input.value = '';
+      }
+    }
+
+    function addMessage(msg) {
+      const div = document.getElementById('messages');
+      div.innerHTML += "<div>" + msg + "</div>";
+      div.scrollTop = div.scrollHeight;
+    }
+  </script>
+</body>
+</html>
