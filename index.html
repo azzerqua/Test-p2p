@@ -4,6 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>P2P Chat</title>
+  <style id="dynamic-style">
+    body {
+      font-family: sans-serif;
+      background: #f8f8f8;
+      color: #333;
+      padding: 1rem;
+    }
+    #log {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+    img {
+      max-width: 150px;
+      display: block;
+      margin-top: 0.5rem;
+    }
+  </style>
 </head>
 <body>
   <h2>P2P Chat (PeerJS)</h2>
@@ -15,12 +37,18 @@
 
   <div>
     <input id="peer-id" placeholder="ID " />
-    <button id="connect">join</button>
+    <button id="connect">Join</button>
   </div>
 
   <div>
+    <input type="file" id="imgInput" />
     <input id="message" placeholder="Message..." />
     <button id="send">Envoyer</button>
+  </div>
+
+  <div>
+    <button id="toggle-css-editor">Modifier le CSS</button>
+    <textarea id="css-editor" style="display:none;width:100%;height:150px;margin-top:1rem;"></textarea>
   </div>
 
   <pre id="log"></pre>
@@ -30,31 +58,50 @@
     const myIdDisplay = document.getElementById('my-id');
     const log = document.getElementById('log');
     const messageInput = document.getElementById('message');
-    const username = prompt("username");
+    const cssEditor = document.getElementById('css-editor');
+    const styleTag = document.getElementById('dynamic-style');
+    const username = prompt("Username ?");
     
     const connections = [];
+    const userNames = new Map();
     const MAX_CLIENTS = 5;
-    const userNames = new Map(); // connection => username
-
     let peer = null;
 
-    const logMessage = (msg) => {
-      log.textContent += msg + '\n';
+    const logMessage = (html) => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
     };
 
-    // Création d'une session (host)
+    const formatMessage = (text) => {
+      return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
+        return `<span style="color:${color}">${content}</span>`;
+      });
+    };
+
+    // CSS toggle
+    document.getElementById('toggle-css-editor').onclick = () => {
+      cssEditor.style.display = cssEditor.style.display === 'none' ? 'block' : 'none';
+      cssEditor.value = styleTag.textContent;
+    };
+
+    cssEditor.addEventListener('input', () => {
+      styleTag.textContent = cssEditor.value;
+    });
+
+    // Création d'une session
     document.getElementById('create').onclick = () => {
       peer = new Peer();
-
       peer.on('open', (id) => {
         myIdDisplay.textContent = id;
-        logMessage("Ton ID: " + id);
+        logMessage(`<i>Ton ID: ${id}</i>`);
       });
 
       peer.on('connection', (connection) => {
         if (connections.length >= MAX_CLIENTS - 1) {
-          connection.close(); // Refuse si trop de gens
-          logMessage("Connexion refusée : max atteint.");
+          connection.close();
+          logMessage(`<i>Connexion refusée : max atteint.</i>`);
           return;
         }
         setupConnection(connection);
@@ -65,29 +112,36 @@
     document.getElementById('connect').onclick = () => {
       const peerId = document.getElementById('peer-id').value;
       if (!peer) peer = new Peer();
-
       peer.on('open', () => {
         const conn = peer.connect(peerId);
         setupConnection(conn);
       });
     };
 
-    // Envoi d'un message
+    // Envoi de texte
     document.getElementById('send').onclick = () => {
-      const msg = messageInput.value;
-      if (msg.trim() === '') return;
-
-      connections.forEach(c => {
-        if (c.open) {
-          c.send({ type: "message", text: msg });
-        }
-      });
-
-      logMessage(`${username}: ${msg}`);
+      const msg = messageInput.value.trim();
+      if (!msg) return;
+      connections.forEach(c => c.send({ type: "message", text: msg }));
+      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
       messageInput.value = '';
     };
 
-    // Configuration d'une connexion
+    // Envoi d’image
+    document.getElementById("imgInput").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result;
+        connections.forEach(c => c.send({ type: "image", data: base64 }));
+        const img = document.createElement("img");
+        img.src = base64;
+        log.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+
     function setupConnection(connection) {
       connection.on('open', () => {
         connections.push(connection);
@@ -96,19 +150,22 @@
         connection.on('data', (data) => {
           if (data.type === "username") {
             userNames.set(connection, data.name);
-            logMessage(`${data.name} a rejoint la conversation`);
+            logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
-            logMessage(`${name}: ${data.text}`);
+            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
+          } else if (data.type === "image") {
+            const img = document.createElement("img");
+            img.src = data.data;
+            log.appendChild(img);
           }
         });
 
         connection.on('close', () => {
           const name = userNames.get(connection) || "Un utilisateur";
-          logMessage(`${name} s'est déconnecté.`);
+          logMessage(`<i>${name} s'est déconnecté.</i>`);
           userNames.delete(connection);
-          const index = connections.indexOf(connection);
-          if (index !== -1) connections.splice(index, 1);
+          connections.splice(connections.indexOf(connection), 1);
         });
       });
     }
