@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini P2P Chat</title>
+  <title>P2P Chat</title>
 </head>
 <body>
   <h2>P2P Chat (PeerJS)</h2>
@@ -14,8 +14,8 @@
   </div>
 
   <div>
-    <input id="peer-id" placeholder="ID de l'autre joueur" />
-    <button id="connect">Rejoindre une connexion</button>
+    <input id="peer-id" placeholder="ID " />
+    <button id="connect">join</button>
   </div>
 
   <div>
@@ -30,7 +30,7 @@
     const myIdDisplay = document.getElementById('my-id');
     const log = document.getElementById('log');
     const messageInput = document.getElementById('message');
-    const username = prompt("Quel est ton nom ?");
+    const username = prompt("username");
     
     const connections = [];
     const MAX_CLIENTS = 5;
