@@ -6,25 +6,51 @@
   <title>P2P Chat</title>
   <style id="dynamic-style">
     body {
-      font-family: sans-serif;
-      background: #f8f8f8;
-      color: #333;
-      padding: 1rem;
-    }
-    #log {
-      white-space: pre-wrap;
-      border: 1px solid #ccc;
-      background: #fff;
-      padding: 1rem;
-      max-height: 300px;
-      overflow-y: auto;
-      margin-top: 1rem;
-    }
-    img {
-      max-width: 150px;
-      display: block;
-      margin-top: 0.5rem;
-    }
+body {
+  font-family: sans-serif;
+  background: #f8f8f8;
+  color: #333;
+  margin: 0;
+  padding-bottom: 120px; /* espace pour le champ en bas */
+}
+
+#log {
+  position: relative;
+  white-space: pre-wrap;
+  border-top: 1px solid #ccc;
+  background: #fff;
+  padding: 1rem;
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+#log > div {
+  margin-bottom: 0.5rem;
+}
+
+img {
+  max-width: 150px;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* Barre d'envoi fixée en bas */
+.send {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  z-index: 10;
+}
   </style>
 </head>
 <body>
