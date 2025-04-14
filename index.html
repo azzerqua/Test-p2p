@@ -3,76 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>P2P Chat</title>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    input, button { margin: 0.5rem 0; padding: 0.5rem; }
-    #messages { border: 1px solid #ccc; padding: 1rem; height: 200px; overflow-y: auto; margin-bottom: 1rem; }
-  </style>
+  <title>Mini P2P Chat</title>
 </head>
 <body>
-  <h2>P2P Chat (via PeerJS)</h2>
+  <h2>P2P Chat (PeerJS)</h2>
 
   <div>
-    <button onclick="createHost()">Créer une partie</button>
-    <br>
-    <div id="hostInfo"></div>
-    <hr>
-    <input type="text" id="joinId" placeholder="ID de la partie" />
-    <button onclick="joinHost()">Rejoindre</button>
+    <button id="create">Créer une connexion</button>
+    <p>Ton ID : <span id="my-id">-</span></p>
   </div>
 
-  <div id="chat" style="display:none;">
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Message..." />
-    <button onclick="sendMessage()">Envoyer</button>
+  <div>
+    <input id="peer-id" placeholder="ID de l'autre joueur" />
+    <button id="connect">Rejoindre une connexion</button>
   </div>
 
+  <div>
+    <input id="message" placeholder="Message..." />
+    <button id="send">Envoyer</button>
+  </div>
+
+  <pre id="log"></pre>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script>
-    let peer, conn;
+    const myIdDisplay = document.getElementById('my-id');
+    const log = document.getElementById('log');
+    const messageInput = document.getElementById('message');
 
-    function createHost() {
+    let peer = null;
+    let conn = null;
+
+    const logMessage = (msg) => {
+      log.textContent += msg + '\n';
+    };
+
+    document.getElementById('create').onclick = () => {
       peer = new Peer();
       peer.on('open', (id) => {
-        document.getElementById('hostInfo').innerText = "Votre ID : " + id;
+        myIdDisplay.textContent = id;
+        logMessage("Ton ID: " + id);
       });
 
-      peer.on('connection', (c) => {
-        conn = c;
+      peer.on('connection', (connection) => {
+        conn = connection;
         setupConnection();
       });
-    }
+    };
 
-    function joinHost() {
-      const id = document.getElementById('joinId').value;
-      peer = new Peer();
-      conn = peer.connect(id);
-      conn.on('open', setupConnection);
-    }
+    document.getElementById('connect').onclick = () => {
+      const peerId = document.getElementById('peer-id').value;
+      conn = peer.connect(peerId);
+      setupConnection();
+    };
 
     function setupConnection() {
-      document.getElementById('chat').style.display = 'block';
-      conn.on('data', (data) => {
-        addMessage("Lui: " + data);
+      conn.on('open', () => {
+        logMessage("Connecté !");
+        conn.on('data', (data) => {
+          logMessage("Lui: " + data);
+        });
       });
     }
 
-    function sendMessage() {
-      const input = document.getElementById('messageInput');
-      const text = input.value;
-      if (conn && text.trim()) {
-        conn.send(text);
-        addMessage("Moi: " + text);
-        input.value = '';
+    document.getElementById('send').onclick = () => {
+      const msg = messageInput.value;
+      if (conn && conn.open) {
+        conn.send(msg);
+        logMessage("Toi: " + msg);
+        messageInput.value = '';
       }
-    }
-
-    function addMessage(msg) {
-      const div = document.getElementById('messages');
-      div.innerHTML += "<div>" + msg + "</div>";
-      div.scrollTop = div.scrollHeight;
-    }
+    };
   </script>
 </body>
 </html>
