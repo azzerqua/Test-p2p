@@ -16,6 +16,7 @@
   <div>
     <input id="peer-id" placeholder="ID de l'autre joueur" />
     <button id="connect">Rejoindre une connexion</button>
+    <span id="status">Statut : Non connecté</span>
   </div>
 
   <div>
@@ -30,50 +31,113 @@
     const myIdDisplay = document.getElementById('my-id');
     const log = document.getElementById('log');
     const messageInput = document.getElementById('message');
+    const username = prompt("Quel est ton nom ?");
+    const connectBtn = document.getElementById('connect');
+    const statusSpan = document.getElementById('status');
+
+    const connections = [];
+    const MAX_CLIENTS = 5;
+    const userNames = new Map();
 
     let peer = null;
-    let conn = null;
 
     const logMessage = (msg) => {
       log.textContent += msg + '\n';
     };
 
+    const updateStatus = (text) => {
+      statusSpan.textContent = "Statut : " + text;
+    };
+
+    // Créateur
     document.getElementById('create').onclick = () => {
       peer = new Peer();
+
       peer.on('open', (id) => {
         myIdDisplay.textContent = id;
         logMessage("Ton ID: " + id);
       });
 
       peer.on('connection', (connection) => {
-        conn = connection;
-        setupConnection();
+        if (connections.length >= MAX_CLIENTS - 1) {
+          connection.close();
+          logMessage("Connexion refusée : max atteint.");
+          return;
+        }
+        setupConnection(connection);
       });
     };
 
-    document.getElementById('connect').onclick = () => {
+    // Rejoindre
+    connectBtn.onclick = () => {
       const peerId = document.getElementById('peer-id').value;
-      conn = peer.connect(peerId);
-      setupConnection();
+      if (!peer) peer = new Peer();
+
+      updateStatus("Connexion en cours...");
+      connectBtn.disabled = true;
+
+      peer.on('open', () => {
+        const conn = peer.connect(peerId);
+
+        conn.on('open', () => {
+          updateStatus("Connecté");
+          setupConnection(conn);
+        });
+
+        conn.on('error', (err) => {
+          updateStatus("Erreur de connexion");
+          connectBtn.disabled = false;
+        });
+
+        conn.on('close', () => {
+          updateStatus("Déconnecté");
+          connectBtn.disabled = false;
+        });
+      });
     };
 
-    function setupConnection() {
-      conn.on('open', () => {
-        logMessage("Connecté !");
-        conn.on('data', (data) => {
-          logMessage("Lui: " + data);
+    // Envoi message
+    document.getElementById('send').onclick = () => {
+      const msg = messageInput.value;
+      if (msg.trim() === '') return;
+
+      connections.forEach(c => {
+        if (c.open) {
+          c.send({ type: "message", text: msg });
+        }
+      });
+
+      logMessage(`${username}: ${msg}`);
+      messageInput.value = '';
+    };
+
+    // Connexion
+    function setupConnection(connection) {
+      connection.on('open', () => {
+        connections.push(connection);
+        connection.send({ type: "username", name: username });
+
+        connection.on('data', (data) => {
+          if (data.type === "username") {
+            userNames.set(connection, data.name);
+            logMessage(`${data.name} a rejoint la conversation`);
+          } else if (data.type === "message") {
+            const name = userNames.get(connection) || "Inconnu";
+            logMessage(`${name}: ${data.text}`);
+          }
+        });
+
+        connection.on('close', () => {
+          const name = userNames.get(connection) || "Un utilisateur";
+          logMessage(`${name} s'est déconnecté.`);
+          userNames.delete(connection);
+          const index = connections.indexOf(connection);
+          if (index !== -1) connections.splice(index, 1);
+          updateStatus("Déconnecté");
+          connectBtn.disabled = false;
         });
       });
     }
-
-    document.getElementById('send').onclick = () => {
-      const msg = messageInput.value;
-      if (conn && conn.open) {
-        conn.send(msg);
-        logMessage("Toi: " + msg);
-        messageInput.value = '';
-      }
-    };
   </script>
 </body>
 </html>
