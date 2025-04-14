@@ -16,6 +16,7 @@
   <div>
     <input id="peer-id" placeholder="ID de l'autre joueur" />
     <button id="connect">Rejoindre une connexion</button>
+    <span id="status">Statut : Non connecté</span>
   </div>
 
   <div>
@@ -31,10 +32,12 @@
     const log = document.getElementById('log');
     const messageInput = document.getElementById('message');
     const username = prompt("Quel est ton nom ?");
-    
+    const connectBtn = document.getElementById('connect');
+    const statusSpan = document.getElementById('status');
+
     const connections = [];
     const MAX_CLIENTS = 5;
-    const userNames = new Map(); // connection => username
+    const userNames = new Map();
 
     let peer = null;
 
@@ -42,7 +45,11 @@
       log.textContent += msg + '\n';
     };
 
-    // Création d'une session (host)
+    const updateStatus = (text) => {
+      statusSpan.textContent = "Statut : " + text;
+    };
+
+    // Créateur
     document.getElementById('create').onclick = () => {
       peer = new Peer();
 
@@ -53,7 +60,7 @@
 
       peer.on('connection', (connection) => {
         if (connections.length >= MAX_CLIENTS - 1) {
-          connection.close(); // Refuse si trop de gens
+          connection.close();
           logMessage("Connexion refusée : max atteint.");
           return;
         }
@@ -61,18 +68,35 @@
       });
     };
 
-    // Rejoindre une session
-    document.getElementById('connect').onclick = () => {
+    // Rejoindre
+    connectBtn.onclick = () => {
       const peerId = document.getElementById('peer-id').value;
       if (!peer) peer = new Peer();
 
+      updateStatus("Connexion en cours...");
+      connectBtn.disabled = true;
+
       peer.on('open', () => {
         const conn = peer.connect(peerId);
-        setupConnection(conn);
+
+        conn.on('open', () => {
+          updateStatus("Connecté");
+          setupConnection(conn);
+        });
+
+        conn.on('error', (err) => {
+          updateStatus("Erreur de connexion");
+          connectBtn.disabled = false;
+        });
+
+        conn.on('close', () => {
+          updateStatus("Déconnecté");
+          connectBtn.disabled = false;
+        });
       });
     };
 
-    // Envoi d'un message
+    // Envoi message
     document.getElementById('send').onclick = () => {
       const msg = messageInput.value;
       if (msg.trim() === '') return;
@@ -87,7 +111,7 @@
       messageInput.value = '';
     };
 
-    // Configuration d'une connexion
+    // Connexion
     function setupConnection(connection) {
       connection.on('open', () => {
         connections.push(connection);
@@ -109,6 +133,8 @@
           userNames.delete(connection);
           const index = connections.indexOf(connection);
           if (index !== -1) connections.splice(index, 1);
+          updateStatus("Déconnecté");
+          connectBtn.disabled = false;
         });
       });
     }
