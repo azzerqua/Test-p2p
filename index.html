@@ -93,6 +93,7 @@ img {
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
+    let replyTo = null;
 
     const logMessage = (html) => {
       const div = document.createElement('div');
@@ -168,6 +169,34 @@ img {
       };
       reader.readAsDataURL(file);
     });
+    
+    function logMessage(msg, author = "Système", replyInfo = null) {
+  const line = document.createElement('div');
+
+  if (replyInfo) {
+    const replyDiv = document.createElement('div');
+    replyDiv.style.fontStyle = 'italic';
+    replyDiv.style.color = '#888';
+    replyDiv.textContent = `↪ En réponse à ${replyInfo.author}: "${replyInfo.excerpt}"`;
+    line.appendChild(replyDiv);
+  }
+
+  const text = document.createElement('div');
+  text.textContent = `[${author}] ${msg}`;
+  line.appendChild(text);
+
+  // Ajout du double-clic
+  line.ondblclick = () => {
+    replyTo = {
+      author: author,
+      excerpt: msg.slice(0, 50)
+    };
+    showReplyBanner(); // à créer dans l’étape 2
+  };
+
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
 
     function setupConnection(connection) {
       connection.on('open', () => {
