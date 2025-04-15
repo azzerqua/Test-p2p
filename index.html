@@ -68,7 +68,6 @@ img {
   </div>
 
  <div class="send">
-    <div id="reply-banner" style="display:none; width:100%; font-style:italic; color:#666;"></div>
     <input type="file" id="imgInput" />
     <input id="message" placeholder="Message..." />
     <button id="send">Envoyer</button>
@@ -94,7 +93,6 @@ img {
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
-    let replyTo = null;
 
     const logMessage = (html) => {
       const div = document.createElement('div');
@@ -147,26 +145,14 @@ img {
       });
     };
 
-document.getElementById('send').onclick = () => {
-  const msg = messageInput.value.trim();
-  if (!msg) return;
-
-  const payload = {
-    type: "message",
-    text: msg
-  };
-
-  if (replyTo) {
-    payload.replyTo = replyTo;
-  }
-
-  connections.forEach(c => c.send(payload));
-
-  logMessage(formatMessage(msg), username, replyTo);
-  messageInput.value = '';
-  replyTo = null;
-  document.getElementById('reply-banner').style.display = 'none';
-};
+    // Envoi de texte
+    document.getElementById('send').onclick = () => {
+      const msg = messageInput.value.trim();
+      if (!msg) return;
+      connections.forEach(c => c.send({ type: "message", text: msg }));
+      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
+      messageInput.value = '';
+    };
 
     // Envoi d’image
     document.getElementById("imgInput").addEventListener("change", (event) => {
@@ -183,45 +169,6 @@ document.getElementById('send').onclick = () => {
       reader.readAsDataURL(file);
     });
     
-    
-    function showReplyBanner() {
-  const banner = document.getElementById('reply-banner');
-  banner.style.display = 'block';
-  banner.textContent = `Réponse à ${replyTo.author}: "${replyTo.excerpt}"`;
-
-  banner.onclick = () => {
-    replyTo = null;
-    banner.style.display = 'none';
-  };
-}
-    
-    function logMessage(msg, author = "Système", replyInfo = null) {
-  const line = document.createElement('div');
-
-  if (replyInfo) {
-    const replyDiv = document.createElement('div');
-    replyDiv.style.fontStyle = 'italic';
-    replyDiv.style.color = '#888';
-    replyDiv.textContent = `↪ En réponse à ${replyInfo.author}: "${replyInfo.excerpt}"`;
-    line.appendChild(replyDiv);
-  }
-
-  const text = document.createElement('div');
-  text.textContent = `[${author}] ${msg}`;
-  line.appendChild(text);
-
-  // Ajout du double-clic
-  line.ondblclick = () => {
-    replyTo = {
-      author: author,
-      excerpt: msg.slice(0, 50)
-    };
-    showReplyBanner(); // à créer dans l’étape 2
-  };
-
-  log.appendChild(line);
-  log.scrollTop = log.scrollHeight;
-}
 
     function setupConnection(connection) {
       connection.on('open', () => {
@@ -234,7 +181,7 @@ document.getElementById('send').onclick = () => {
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
-            logMessage(formatMessage(data.text), name, data.replyTo || null);
+            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
           } else if (data.type === "image") {
             const img = document.createElement("img");
             img.src = data.data;
