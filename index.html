@@ -52,6 +52,24 @@ img {
   flex-wrap: wrap;
   z-index: 10;
 }
+
+.context-menu button {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reply-preview {
+  font-size: 0.85rem;
+  background: #eee;
+  padding: 0.3rem 0.6rem;
+  border-left: 3px solid #999;
+  margin-bottom: 0.3rem;
+  display: none;
+}
   </style>
 </head>
 <body>
@@ -68,6 +86,7 @@ img {
   </div>
 
  <div class="send">
+    <div class="reply-preview" id="reply-preview"></div>
     <input type="file" id="imgInput" />
     <input id="message" placeholder="Message..." />
     <button id="send">Envoyer</button>
@@ -88,18 +107,50 @@ img {
     const cssEditor = document.getElementById('css-editor');
     const styleTag = document.getElementById('dynamic-style');
     const username = prompt("Username ?");
+    let replyingTo = null;
+    const replyPreview = document.getElementById('reply-preview');
     
     const connections = [];
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
 
-    const logMessage = (html) => {
-      const div = document.createElement('div');
-      div.innerHTML = html;
-      log.appendChild(div);
-      log.scrollTop = log.scrollHeight;
-    };
+const logMessage = (html, replyTo = null) => {
+  const container = document.createElement('div');
+  container.className = 'message-container';
+
+  const menuBtn = document.createElement('span');
+  menuBtn.className = 'message-options';
+  menuBtn.textContent = '⋮';
+  container.appendChild(menuBtn);
+
+  const contextMenu = document.createElement('div');
+  contextMenu.className = 'context-menu';
+  const replyOption = document.createElement('button');
+  replyOption.textContent = 'Répondre';
+  contextMenu.appendChild(replyOption);
+  container.appendChild(contextMenu);
+
+  replyOption.onclick = () => {
+    replyingTo = replyTo;
+    replyPreview.textContent = `${replyTo.author} → "${replyTo.text}"`;
+    replyPreview.style.display = 'block';
+    contextMenu.style.display = 'none';
+  };
+
+  menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    contextMenu.style.display = contextMenu.style.display === 'block' ? 'none' : 'block';
+  };
+
+  document.addEventListener('click', () => contextMenu.style.display = 'none');
+
+  const msg = document.createElement('div');
+  msg.innerHTML = html;
+  container.appendChild(msg);
+  log.appendChild(container);
+  log.scrollTop = log.scrollHeight;
+};
 
     const formatMessage = (text) => {
       return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
@@ -145,14 +196,33 @@ img {
       });
     };
 
-    // Envoi de texte
     document.getElementById('send').onclick = () => {
-      const msg = messageInput.value.trim();
-      if (!msg) return;
-      connections.forEach(c => c.send({ type: "message", text: msg }));
-      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
-      messageInput.value = '';
-    };
+  const msg = messageInput.value.trim();
+  if (!msg) return;
+
+  const messageData = {
+    type: "message",
+    text: msg
+  };
+
+  if (replyingTo) {
+    messageData.replyTo = replyingTo;
+  }
+
+  connections.forEach(c => c.send(messageData));
+
+  let html = '';
+  if (replyingTo) {
+    html += `<div style="font-size:0.85em;color:#666;border-left:2px solid #ccc;padding-left:5px;margin-bottom:2px">${replyingTo.author} → "${replyingTo.text}"</div>`;
+    replyingTo = null;
+    replyPreview.style.display = 'none';
+  }
+
+  html += `<b>${username}:</b> ${formatMessage(msg)}`;
+  logMessage(html, { author: username, text: msg });
+
+  messageInput.value = '';
+};
 
     // Envoi d’image
     document.getElementById("imgInput").addEventListener("change", (event) => {
@@ -180,8 +250,14 @@ img {
             userNames.set(connection, data.name);
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
-            const name = userNames.get(connection) || "Inconnu";
-            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
+  const name = userNames.get(connection) || "Inconnu";
+  let html = '';
+  if (data.replyTo) {
+    html += `<div style="font-size:0.85em;color:#666;border-left:2px solid #ccc;padding-left:5px;margin-bottom:2px">${data.replyTo.author} → "${data.replyTo.text}"</div>`;
+  }
+  html += `<b>${name}:</b> ${formatMessage(data.text)}`;
+  logMessage(html, { author: name, text: data.text });
+}
           } else if (data.type === "image") {
             const img = document.createElement("img");
             img.src = data.data;
