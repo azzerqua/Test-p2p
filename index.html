@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>P2P Chat</title>
   <style id="dynamic-style">
+
    
 body {
   font-family: sans-serif;
@@ -152,6 +153,7 @@ img {
       connections.forEach(c => c.send({ type: "message", text: msg }));
       logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
       messageInput.value = '';
+      messageInput.focus();
     };
 
     // Envoi d’image
