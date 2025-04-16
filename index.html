@@ -5,95 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>P2P Chat</title>
   <style id="dynamic-style">
-    body {
-      font-family: sans-serif;
-      background: #f8f8f8;
-      color: #333;
-      margin: 0;
-    }
+body {
+  font-family: sans-serif;
+  background: #f8f8f8;
+  color: #333;
+  margin: 0;
+}
 
-    #log {
-      position: relative;
-      white-space: pre-wrap;
-      border-top: 1px solid #ccc;
-      background: #fff;
-      padding: 1rem;
-      height: calc(100vh - 240px);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      margin-bottom: 5rem;
-    }
+#log {
+  position: relative;
+  white-space: pre-wrap;
+  border-top: 1px solid #ccc;
+  background: #fff;
+  padding: 1rem;
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: 5rem;
+}
 
-    #log > div {
-      margin-bottom: 1rem;
-      position: relative;
-    }
+#log > div {
+  margin-bottom: 1rem;
+  position: relative;
+  padding-left: 1.5rem;
+}
 
-    .menu-btn {
-      position: absolute;
-      left: -25px;
-      top: 0;
-      cursor: pointer;
-      opacity: 0.3;
-    }
+.message-menu {
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.3;
+}
 
-    .menu {
-      position: absolute;
-      left: 0;
-      top: 1.5em;
-      background: #eee;
-      border: 1px solid #ccc;
-      font-size: 0.85em;
-      display: none;
-      z-index: 10;
-    }
+.message-menu:hover {
+  opacity: 0.8;
+}
 
-    .menu button {
-      display: block;
-      padding: 0.3em 0.5em;
-      width: 100%;
-      border: none;
-      background: none;
-      cursor: pointer;
-    }
+.menu-popup {
+  position: absolute;
+  left: 1.5rem;
+  top: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.9rem;
+  display: none;
+  z-index: 2;
+}
 
-    .reply-preview {
-      font-size: 0.85em;
-      color: #555;
-      margin-bottom: 0.3em;
-    }
-
-    .send {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #fff;
-      border-top: 1px solid #ccc;
-      padding: 1rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      z-index: 10;
-    }
-
-    .reply-box {
-      position: fixed;
-      bottom: 100px;
-      left: 0;
-      width: 100%;
-      padding: 0 1rem;
-      font-size: 0.9em;
-      color: #555;
-    }
-
-    img {
-      max-width: 150px;
-      display: block;
-      margin-top: 0.5rem;
-    }
+.send {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  z-index: 10;
+}
   </style>
 </head>
 <body>
@@ -107,10 +83,6 @@
   <div class="join">
     <input id="peer-id" placeholder="ID " />
     <button id="connect">Join</button>
-  </div>
-
-  <div class="reply-box" id="reply-box" style="display:none;">
-    Répondre à : <span id="reply-preview"></span> <button onclick="cancelReply()">Annuler</button>
   </div>
 
   <div class="send">
@@ -133,55 +105,48 @@
     const messageInput = document.getElementById('message');
     const cssEditor = document.getElementById('css-editor');
     const styleTag = document.getElementById('dynamic-style');
-    const replyBox = document.getElementById("reply-box");
-    const replyPreview = document.getElementById("reply-preview");
     const username = prompt("Username ?");
     
-    let replyTo = null;
     const connections = [];
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
+    let replyRef = null;
 
-    const formatMessage = (text) => {
-      return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
-        return `<span style="color:${color}">${content}</span>`;
-      });
-    };
-
-    const logMessage = (html, meta = {}) => {
+    const logMessage = (html, replyData = null) => {
       const div = document.createElement('div');
-      const menuBtn = document.createElement("span");
-      menuBtn.textContent = "⋮";
-      menuBtn.className = "menu-btn";
-      const menu = document.createElement("div");
-      menu.className = "menu";
 
-      const replyBtn = document.createElement("button");
-      replyBtn.textContent = "Répondre";
-      replyBtn.onclick = () => {
-        replyTo = meta;
-        replyPreview.textContent = `${meta.name || "?"} - "${meta.text}"`;
-        replyBox.style.display = "block";
-        menu.style.display = "none";
+      // Message options (⋮)
+      const menuButton = document.createElement('div');
+      menuButton.className = "message-menu";
+      menuButton.textContent = "⋮";
+
+      const menuPopup = document.createElement('div');
+      menuPopup.className = "menu-popup";
+      menuPopup.innerHTML = "<div class='reply-option'>Répondre</div>";
+
+      // Show menu on click
+      menuButton.onclick = () => {
+        menuPopup.style.display = menuPopup.style.display === "block" ? "none" : "block";
       };
 
-      menu.appendChild(replyBtn);
-      menuBtn.onclick = () => {
-        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      // Reply action
+      menuPopup.querySelector('.reply-option').onclick = () => {
+        messageInput.value = `[reply:${replyData?.author || "?"}] ${replyData?.text || ""} → `;
+        menuPopup.style.display = "none";
       };
 
-      div.appendChild(menuBtn);
-      div.appendChild(menu);
+      div.appendChild(menuButton);
+      div.appendChild(menuPopup);
       div.innerHTML += html;
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
     };
 
-    window.cancelReply = () => {
-      replyTo = null;
-      replyBox.style.display = "none";
-      replyPreview.textContent = "";
+    const formatMessage = (text) => {
+      return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
+        return `<span style="color:${color}">${content}</span>`;
+      });
     };
 
     document.getElementById('toggle-css-editor').onclick = () => {
@@ -222,25 +187,9 @@
     document.getElementById('send').onclick = () => {
       const msg = messageInput.value.trim();
       if (!msg) return;
-
-      const data = {
-        type: "message",
-        text: msg
-      };
-
-      if (replyTo) {
-        data.replyTo = {
-          name: replyTo.name,
-          text: replyTo.text
-        };
-      }
-
-      connections.forEach(c => c.send(data));
-
-      const replyHtml = replyTo ? `<div class="reply-preview"><i>En réponse à ${replyTo.name} : "${replyTo.text}"</i></div>` : "";
-      logMessage(`${replyHtml}<b>${username}:</b> ${formatMessage(msg)}`, { name: username, text: msg });
+      connections.forEach(c => c.send({ type: "message", text: msg }));
+      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, { author: username, text: msg });
       messageInput.value = '';
-      cancelReply();
     };
 
     document.getElementById("imgInput").addEventListener("change", (event) => {
@@ -268,8 +217,7 @@
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
-            const replyHtml = data.replyTo ? `<div class="reply-preview"><i>En réponse à ${data.replyTo.name} : "${data.replyTo.text}"</i></div>` : "";
-            logMessage(`${replyHtml}<b>${name}:</b> ${formatMessage(data.text)}`, { name, text: data.text });
+            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`, { author: name, text: data.text });
           } else if (data.type === "image") {
             const img = document.createElement("img");
             img.src = data.data;
