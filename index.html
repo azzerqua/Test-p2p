@@ -15,6 +15,10 @@ body {
   
 }
 
+input, textarea, button {
+  font-size: 16px;
+}
+
 #log {
   position: relative;
   white-space: pre-wrap;
@@ -153,7 +157,9 @@ img {
       connections.forEach(c => c.send({ type: "message", text: msg }));
       logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
       messageInput.value = '';
-      messageInput.focus();
+      setTimeout(() => {
+        messageInput.focus();
+      }, 0);
     };
 
     // Envoi d’image
