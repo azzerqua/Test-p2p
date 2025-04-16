@@ -150,17 +150,28 @@ img {
       });
     };
 
-    // Envoi de texte
-    document.getElementById('send').onclick = () => {
-      const msg = messageInput.value.trim();
-      if (!msg) return;
-      connections.forEach(c => c.send({ type: "message", text: msg }));
-      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
-      messageInput.value = '';
-      setTimeout(() => {
-        messageInput.focus();
-      }, 0);
-    };
+const sendBtn = document.getElementById('send');
+
+sendBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  sendMessage();
+});
+
+sendBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  sendMessage();
+});
+
+function sendMessage() {
+  const msg = messageInput.value.trim();
+  if (!msg) return;
+  connections.forEach(c => c.send({ type: "message", text: msg }));
+  logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
+  messageInput.value = '';
+  setTimeout(() => {
+    messageInput.focus();
+  }, 0);
+}
 
     // Envoi d’image
     document.getElementById("imgInput").addEventListener("change", (event) => {
