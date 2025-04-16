@@ -2,61 +2,107 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>P2P Chat</title>
   <style id="dynamic-style">
+    body {
+      font-family: sans-serif;
+      background: #f8f8f8;
+      color: #333;
+      margin: 0;
+    }
 
-   
-body {
-  font-family: sans-serif;
-  background: #f8f8f8;
-  color: #333;
-  margin: 0;
-  
-}
+    input, textarea, button {
+      font-size: 16px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
 
-input, textarea, button {
-  font-size: 16px;
-}
+    button {
+      background: #f0f0f0;
+      cursor: pointer;
+    }
 
-#log {
-  position: relative;
-  white-space: pre-wrap;
-  border-top: 1px solid #ccc;
-  background: #fff;
-  padding: 1rem;
-  height: calc(100vh - 220px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-   margin-bottom: 5rem;
-}
+    #log {
+      position: relative;
+      white-space: pre-wrap;
+      border-top: 1px solid #ccc;
+      background: #fff;
+      padding: 1rem;
+      height: calc(100vh - 220px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      margin-bottom: 5rem;
+    }
 
-#log > div {
-  margin-bottom: 1rem;
-}
+    #log > div {
+      margin-bottom: 1rem;
+      padding: 8px;
+      border-radius: 4px;
+      background: #fff;
+      position: relative;
+    }
 
-img {
-  max-width: 150px;
-  display: block;
-  margin-top: 0.5rem;
-}
+    .message-actions {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: none;
+    }
 
-/* Barre d'envoi fixée en bas */
-.send {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: #fff;
-  border-top: 1px solid #ccc;
-  padding: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  z-index: 10;
-}
+    #log > div:hover .message-actions {
+      display: block;
+    }
+
+    .reply-btn {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 12px;
+      padding: 2px 6px;
+    }
+
+    .reply-btn:hover {
+      color: #333;
+    }
+
+    .reply-indicator {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    img {
+      max-width: 150px;
+      display: block;
+      margin-top: 0.5rem;
+    }
+
+    .send {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #fff;
+      border-top: 1px solid #ccc;
+      padding: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      z-index: 10;
+    }
+
+    .reply-box {
+      width: 100%;
+      padding: 8px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -67,12 +113,13 @@ img {
     <p>Ton ID : <span id="my-id">-</span></p>
   </div>
 
- <div class="join">
+  <div class="join">
     <input id="peer-id" placeholder="ID " />
     <button id="connect">Join</button>
   </div>
 
- <div class="send">
+  <div class="send">
+    <div id="reply-box" class="reply-box"></div>
     <input type="file" id="imgInput" />
     <input id="message" placeholder="Message..." />
     <button id="send">Envoyer</button>
@@ -92,16 +139,42 @@ img {
     const messageInput = document.getElementById('message');
     const cssEditor = document.getElementById('css-editor');
     const styleTag = document.getElementById('dynamic-style');
+    const replyBox = document.getElementById('reply-box');
     const username = prompt("Username ?");
     
     const connections = [];
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
+    let replyingTo = null;
 
-    const logMessage = (html) => {
+    const logMessage = (html, originalMessage = null) => {
       const div = document.createElement('div');
-      div.innerHTML = html;
+      
+      if (originalMessage) {
+        const replyIndicator = document.createElement('div');
+        replyIndicator.className = 'reply-indicator';
+        replyIndicator.innerHTML = `Réponse à: ${originalMessage}`;
+        div.appendChild(replyIndicator);
+      }
+      
+      div.innerHTML += html;
+      
+      // Add reply button
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'message-actions';
+      const replyBtn = document.createElement('button');
+      replyBtn.className = 'reply-btn';
+      replyBtn.textContent = 'Répondre';
+      replyBtn.onclick = () => {
+        replyingTo = html;
+        replyBox.style.display = 'block';
+        replyBox.innerHTML = `Répondre à: ${html.replace(/<[^>]*>/g, '').substring(0, 50)}...`;
+        messageInput.focus();
+      };
+      actionsDiv.appendChild(replyBtn);
+      div.appendChild(actionsDiv);
+      
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
     };
@@ -150,30 +223,45 @@ img {
       });
     };
 
-const sendBtn = document.getElementById('send');
+    const sendBtn = document.getElementById('send');
 
-sendBtn.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  sendMessage();
-});
+    sendBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      sendMessage();
+    });
 
-sendBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  sendMessage();
-});
+    sendBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      sendMessage();
+    });
 
-function sendMessage() {
-  const msg = messageInput.value.trim();
-  if (!msg) return;
-  connections.forEach(c => c.send({ type: "message", text: msg }));
-  logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
-  messageInput.value = '';
-  setTimeout(() => {
-    messageInput.focus();
-  }, 0);
-}
+    function sendMessage() {
+      const msg = messageInput.value.trim();
+      if (!msg) return;
+      
+      const messageData = {
+        type: "message",
+        text: msg,
+        replyTo: replyingTo ? replyingTo.replace(/<[^>]*>/g, '') : null
+      };
+      
+      connections.forEach(c => c.send(messageData));
+      
+      if (replyingTo) {
+        logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, replyingTo);
+        replyingTo = null;
+        replyBox.style.display = 'none';
+      } else {
+        logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
+      }
+      
+      messageInput.value = '';
+      setTimeout(() => {
+        messageInput.focus();
+      }, 0);
+    }
 
-    // Envoi d’image
+    // Envoi d'image
     document.getElementById("imgInput").addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -188,7 +276,6 @@ function sendMessage() {
       reader.readAsDataURL(file);
     });
     
-
     function setupConnection(connection) {
       connection.on('open', () => {
         connections.push(connection);
@@ -200,7 +287,11 @@ function sendMessage() {
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
-            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
+            if (data.replyTo) {
+              logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`, data.replyTo);
+            } else {
+              logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
+            }
           } else if (data.type === "image") {
             const img = document.createElement("img");
             img.src = data.data;
