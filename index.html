@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>P2P Chat</title>
   <style id="dynamic-style">
+   
 body {
   font-family: sans-serif;
   background: #f8f8f8;
   color: #333;
   margin: 0;
+  
 }
 
 #log {
@@ -23,36 +25,11 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  margin-bottom: 5rem;
+   margin-bottom: 5rem;
 }
 
 #log > div {
   margin-bottom: 1rem;
-  padding: 0.5rem;
-  border-radius: 4px;
-  background: white;
-}
-
-#log > div.reply-context {
-  background: #f0f0f0;
-  border-left: 3px solid #ccc;
-  padding-left: 0.5rem;
-  font-size: 0.9em;
-  color: #666;
-}
-
-.reply-btn {
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  font-size: 0.8em;
-  padding: 0;
-  margin-left: 0.5rem;
-}
-
-.reply-btn:hover {
-  text-decoration: underline;
 }
 
 img {
@@ -61,6 +38,7 @@ img {
   margin-top: 0.5rem;
 }
 
+/* Barre d'envoi fixée en bas */
 .send {
   position: fixed;
   bottom: 0;
@@ -74,22 +52,6 @@ img {
   flex-wrap: wrap;
   z-index: 10;
 }
-
-.reply-preview {
-  background: #f5f5f5;
-  padding: 0.5rem;
-  border-left: 2px solid #999;
-  margin-bottom: 0.5rem;
-  font-size: 0.9em;
-  display: flex;
-  justify-content: space-between;
-}
-
-.reply-preview button {
-  background: none;
-  border: none;
-  cursor: pointer;
-}
   </style>
 </head>
 <body>
@@ -100,19 +62,13 @@ img {
     <p>Ton ID : <span id="my-id">-</span></p>
   </div>
 
-  <div class="join">
+ <div class="join">
     <input id="peer-id" placeholder="ID " />
     <button id="connect">Join</button>
   </div>
 
-  <div class="send">
+ <div class="send">
     <input type="file" id="imgInput" />
-    <div id="reply-preview-container" style="display: none;">
-      <div class="reply-preview">
-        <span id="reply-preview-text"></span>
-        <button id="cancel-reply">×</button>
-      </div>
-    </div>
     <input id="message" placeholder="Message..." />
     <button id="send">Envoyer</button>
   </div>
@@ -131,41 +87,16 @@ img {
     const messageInput = document.getElementById('message');
     const cssEditor = document.getElementById('css-editor');
     const styleTag = document.getElementById('dynamic-style');
-    const replyPreviewContainer = document.getElementById('reply-preview-container');
-    const replyPreviewText = document.getElementById('reply-preview-text');
-    const cancelReplyBtn = document.getElementById('cancel-reply');
+    const username = prompt("Username ?");
     
-    const username = prompt("Username ?") || "Anonyme";
     const connections = [];
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
-    let replyingTo = null;
 
-    const logMessage = (html, isReplyContext = false) => {
+    const logMessage = (html) => {
       const div = document.createElement('div');
-      div.className = isReplyContext ? 'reply-context' : '';
       div.innerHTML = html;
-      
-      // Add reply button if it's a regular message (not a reply context)
-      if (!isReplyContext) {
-        const replyBtn = document.createElement('button');
-        replyBtn.className = 'reply-btn';
-        replyBtn.textContent = '⤺';
-        replyBtn.onclick = () => {
-          replyingTo = {
-            text: div.textContent.replace('Répondre', '').trim(),
-            element: div
-          };
-          replyPreviewText.textContent = replyingTo.text.length > 50 
-            ? replyingTo.text.substring(0, 50) + '...' 
-            : replyingTo.text;
-          replyPreviewContainer.style.display = 'block';
-          messageInput.focus();
-        };
-        div.appendChild(replyBtn);
-      }
-      
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
     };
@@ -174,12 +105,6 @@ img {
       return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
         return `<span style="color:${color}">${content}</span>`;
       });
-    };
-
-    // Cancel reply
-    cancelReplyBtn.onclick = () => {
-      replyingTo = null;
-      replyPreviewContainer.style.display = 'none';
     };
 
     // CSS toggle
@@ -224,32 +149,12 @@ img {
     document.getElementById('send').onclick = () => {
       const msg = messageInput.value.trim();
       if (!msg) return;
-      
-      let fullMessage = msg;
-      if (replyingTo) {
-        const replyContext = replyingTo.text.length > 50 
-          ? replyingTo.text.substring(0, 50) + '...' 
-          : replyingTo.text;
-        logMessage(`<i>En réponse à: ${replyContext}</i>`, true);
-        fullMessage = msg;
-      }
-      
-      connections.forEach(c => c.send({ 
-        type: "message", 
-        text: fullMessage,
-        isReply: !!replyingTo
-      }));
-      
-      logMessage(`<b>${username}:</b> ${formatMessage(fullMessage)}`);
+      connections.forEach(c => c.send({ type: "message", text: msg }));
+      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
       messageInput.value = '';
-      
-      if (replyingTo) {
-        replyingTo = null;
-        replyPreviewContainer.style.display = 'none';
-      }
     };
 
-    // Envoi d'image
+    // Envoi d’image
     document.getElementById("imgInput").addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -263,13 +168,7 @@ img {
       };
       reader.readAsDataURL(file);
     });
-
-    // Send message on Enter key
-    messageInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        document.getElementById('send').click();
-      }
-    });
+    
 
     function setupConnection(connection) {
       connection.on('open', () => {
@@ -282,9 +181,6 @@ img {
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
-            if (data.isReply) {
-              logMessage(`<i>${name} répond à un message</i>`, true);
-            }
             logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
           } else if (data.type === "image") {
             const img = document.createElement("img");
