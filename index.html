@@ -2,48 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <title>P2P Chat</title>
   <style id="dynamic-style">
-
-   
 body {
   font-family: sans-serif;
   background: #f8f8f8;
   color: #333;
   margin: 0;
-  
-}
-
-input, textarea, button {
-  font-size: 16px;
 }
 
 #log {
-  position: relative;
   white-space: pre-wrap;
   border-top: 1px solid #ccc;
   background: #fff;
   padding: 1rem;
-  height: calc(100vh - 220px);
+  height: calc(100vh - 250px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-   margin-bottom: 5rem;
+  margin-bottom: 5rem;
 }
 
 #log > div {
   margin-bottom: 1rem;
+  position: relative;
 }
 
-img {
-  max-width: 150px;
-  display: block;
-  margin-top: 0.5rem;
-}
-
-/* Barre d'envoi fixée en bas */
 .send {
   position: fixed;
   bottom: 0;
@@ -57,6 +43,54 @@ img {
   flex-wrap: wrap;
   z-index: 10;
 }
+
+.reply-preview {
+    background: #f5f5f5;
+  padding: 0.5rem;
+  border-left: 2px solid #999;
+  margin-bottom: 0.5rem;
+  font-size: 0.9em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.reply-preview span {
+  font-weight: bold;
+}
+
+.reply-preview button {
+    background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.reply-ref {
+  background: #f0f0f0;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border-left: 3px solid #ccc;
+  margin-bottom: 0.3rem;
+}
+
+.reply-btn {
+    background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.8em;
+  padding: 0;
+  margin-left: 0.5rem;
+}
+.reply-btn:hover {
+  opacity: 1;
+}
+img {
+  max-width: 150px;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+
   </style>
 </head>
 <body>
@@ -71,8 +105,19 @@ img {
     <input id="peer-id" placeholder="ID " />
     <button id="connect">Join</button>
   </div>
+  <div class="theme-controls">
+    <select id="theme-select">
 
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="blue">Blue</option>
+        <!-- Les thèmes sauvegardés seront ajoutés ici dynamiquement -->
+      </select>
+    <button id="save-theme">Sauvegarder thème</button>
+    <button id="share-theme">Partager thème</button>
+  </div>
  <div class="send">
+    <div id="reply-preview" class="reply-preview" style="display:none;"></div>
     <input type="file" id="imgInput" />
     <input id="message" placeholder="Message..." />
     <button id="send">Envoyer</button>
@@ -92,18 +137,285 @@ img {
     const messageInput = document.getElementById('message');
     const cssEditor = document.getElementById('css-editor');
     const styleTag = document.getElementById('dynamic-style');
+    const replyPreview = document.getElementById('reply-preview');
+    const themeSelect = document.getElementById('theme-select');
+
     const username = prompt("Username ?");
-    
     const connections = [];
     const userNames = new Map();
     const MAX_CLIENTS = 5;
     let peer = null;
+    let replyTo = null;
 
-    const logMessage = (html) => {
+
+
+        // Thèmes prédéfinis
+        const themes = {
+      light: `
+body {
+  font-family: sans-serif;
+  background: #f8f8f8;
+  color: #333;
+}
+
+#log {
+  white-space: pre-wrap;
+  border-top: 1px solid #ccc;
+  background: #fff;
+  padding: 1rem;
+  height: calc(100vh - 250px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: 5rem;
+}
+
+#log > div {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.send {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  z-index: 10;
+}
+
+.reply-preview {
+    background: #f5f5f5;
+  padding: 0.5rem;
+  border-left: 2px solid #999;
+  margin-bottom: 0.5rem;
+  font-size: 0.9em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.reply-preview span {
+  font-weight: bold;
+}
+
+.reply-preview button {
+    background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.reply-ref {
+  background: #f0f0f0;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border-left: 3px solid #ccc;
+  margin-bottom: 0.3rem;
+}
+
+.reply-btn {
+    background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.8em;
+  padding: 0;
+  margin-left: 0.5rem;
+}
+.reply-btn:hover {
+  opacity: 1;
+}
+img {
+  max-width: 150px;
+  display: block;
+  margin-top: 0.5rem;
+}
+      `,
+      dark: `
+        body {
+  font-family: sans-serif;
+  background: #191919;
+  color: #ffffff;
+  margin: 0;
+}
+
+#log {
+  white-space: pre-wrap;
+  border-top: 1px solid #474747;
+  background: #191919;
+  padding: 1rem;
+  height: calc(100vh - 250px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: 5rem;
+}
+
+#log > div {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.send {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #191919;
+  border-top: 1px solid #3a3a3a;
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  z-index: 10;
+}
+
+.reply-preview {
+    background: #000000;
+  padding: 0.5rem;
+  border-left: 2px solid #656565;
+  margin-bottom: 0.5rem;
+  font-size: 0.9em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.reply-preview span {
+  font-weight: bold;
+}
+
+.reply-preview button {
+    background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.reply-ref {
+  background: #555555;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border-left: 3px solid #252525;
+  margin-bottom: 0.3rem;
+}
+
+.reply-btn {
+    background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8em;
+  padding: 0;
+  margin-left: 0.5rem;
+}
+.reply-btn:hover {
+  opacity: 1;
+}
+img {
+  max-width: 150px;
+  display: block;
+  margin-top: 0.5rem;
+}
+      `,
+      blue: `
+        body { background: #e3f2fd; color: #0d47a1; }
+        #log { background: #bbdefb; }
+        .send { background: #90caf9; }
+        .reply-preview { background: #64b5f6; }
+      `
+    };
+    let currentThemeName = 'light'; // Variable pour suivre le thème actuel
+    // Charger le thème sauvegardé
+    const savedTheme = localStorage.getItem('chatTheme');
+    if(savedTheme) {
+      styleTag.textContent = savedTheme;
+      cssEditor.value = savedTheme;
+    }
+
+    function applyTheme(themeName) {
+  const themeCSS = themes[themeName];
+  if(themeCSS) {
+    styleTag.textContent = themeCSS;
+    cssEditor.value = themeCSS;
+    currentThemeName = themeName;
+    localStorage.setItem('currentTheme', themeName);
+  }
+}
+
+themeSelect.addEventListener('change', (e) => {
+  const themeName = e.target.value;
+  if(themeName === 'default') return;
+  applyTheme(themeName);
+});
+    function applyRawCSS(css) {
+  styleTag.textContent = css;
+  cssEditor.value = css;
+}
+
+// Au chargement de la page
+const lastTheme = localStorage.getItem('currentTheme');
+const customCSS = localStorage.getItem('currentCustomCSS');
+if(lastTheme && themes[lastTheme]) {
+    applyTheme(lastTheme);
+    themeSelect.value = lastTheme;
+} else if(customCSS) {
+    applyRawCSS(customCSS);
+    themeSelect.value = 'default';
+}
+document.getElementById('save-theme').onclick = () => {
+  const themeName = prompt("Nom du thème ?");
+  if(themeName) {
+    savedThemes[themeName] = styleTag.textContent;
+    localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
+    themes[themeName] = styleTag.textContent; // Ajout crucial
+    updateThemeList();
+    applyTheme(themeName); // Applique immédiatement le nouveau thème
+  }
+};
+
+    document.getElementById('share-theme').onclick = () => {
+      const themeData = {
+        type: "theme",
+        css: styleTag.textContent,
+        sender: username
+      };
+      connections.forEach(c => c.send(themeData));
+      logMessage(`<i>Thème partagé avec les participants</i>`);
+    };
+
+    const logMessage = (html, reply) => {
       const div = document.createElement('div');
-      div.innerHTML = html;
+      if (reply) {
+        const replyDiv = document.createElement('div');
+        replyDiv.className = "reply-ref";
+        replyDiv.innerHTML = `<b>${reply.name}:</b> ${formatMessage(reply.text)}`;
+        div.appendChild(replyDiv);
+      }
+      div.innerHTML += html;
+      const replyBtn = document.createElement('span');
+      replyBtn.textContent = '⤺';
+      replyBtn.className = 'reply-btn';
+      replyBtn.onclick = () => {
+        replyTo = reply || { name: html.split('</b>')[0].replace("<b>", ""), text: html.split('</b>')[1] || "" };
+        showReplyPreview(replyTo.name, replyTo.text);
+      };
+      div.appendChild(replyBtn);
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
+    };
+    const showReplyPreview = (name, text) => {
+      replyPreview.innerHTML = `<span>${name}:</span> ${formatMessage(text)} <button onclick="cancelReply()">×</button>`;
+      replyPreview.style.display = "block";
+    };
+
+    window.cancelReply = () => {
+      replyTo = null;
+      replyPreview.style.display = "none";
     };
 
     const formatMessage = (text) => {
@@ -112,7 +424,22 @@ img {
       });
     };
 
-    // CSS toggle
+    // Charger les thèmes sauvegardés depuis le localStorage
+const savedThemes = JSON.parse(localStorage.getItem('savedThemes') || '{}');
+Object.assign(themes, savedThemes);
+
+function updateThemeList() {
+  themeSelect.innerHTML = `
+
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+    <option value="blue">Blue</option>
+    ${Object.keys(savedThemes).map(name => `
+      <option value="${name}" ${name === currentThemeName ? 'selected' : ''}>${name}</option>
+    `).join('')}
+  `;
+}
+
     document.getElementById('toggle-css-editor').onclick = () => {
       cssEditor.style.display = cssEditor.style.display === 'none' ? 'block' : 'none';
       cssEditor.value = styleTag.textContent;
@@ -122,7 +449,6 @@ img {
       styleTag.textContent = cssEditor.value;
     });
 
-    // Création d'une session
     document.getElementById('create').onclick = () => {
       peer = new Peer();
       peer.on('open', (id) => {
@@ -140,7 +466,6 @@ img {
       });
     };
 
-    // Rejoindre une session
     document.getElementById('connect').onclick = () => {
       const peerId = document.getElementById('peer-id').value;
       if (!peer) peer = new Peer();
@@ -150,30 +475,27 @@ img {
       });
     };
 
-const sendBtn = document.getElementById('send');
+    document.getElementById('send').onclick = () => {
+      const msg = messageInput.value.trim();
+      if (!msg) return;
 
-sendBtn.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  sendMessage();
-});
+      const data = { type: "message", text: msg };
+      if (replyTo) {
+        data.reply = replyTo;
+        cancelReply();
+      }
 
-sendBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  sendMessage();
-});
-
-function sendMessage() {
-  const msg = messageInput.value.trim();
-  if (!msg) return;
-  connections.forEach(c => c.send({ type: "message", text: msg }));
-  logMessage(`<b>${username}:</b> ${formatMessage(msg)}`);
-  messageInput.value = '';
-  setTimeout(() => {
-    messageInput.focus();
-  }, 0);
+      connections.forEach(c => c.send(data));
+      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, data.reply);
+      messageInput.value = '';
+      setTimeout(() => messageInput.focus(), 0);
+    };
+    function applyRawCSS(css) {
+    styleTag.textContent = css;
+    cssEditor.value = css;
+    localStorage.setItem('currentCustomCSS', css); // Nouveau stockage spécifique
 }
 
-    // Envoi d’image
     document.getElementById("imgInput").addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -187,7 +509,6 @@ function sendMessage() {
       };
       reader.readAsDataURL(file);
     });
-    
 
     function setupConnection(connection) {
       connection.on('open', () => {
@@ -200,12 +521,30 @@ function sendMessage() {
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
-            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`);
+            logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`, data.reply);
           } else if (data.type === "image") {
             const img = document.createElement("img");
             img.src = data.data;
             log.appendChild(img);
-          }
+          } else if (data.type === "theme") {
+    if(confirm(`${data.sender} vous envoie un thème. Appliquer maintenant ?`)) {
+        applyRawCSS(data.css);
+        themeSelect.value = 'default'; // Réinitialise le sélecteur
+        alert('Thème appliqué ! Vous pouvez le sauvegarder avec "Sauvegarder thème"');
+    } else {
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Sauvegarder le thème reçu';
+        saveBtn.onclick = () => {
+            const themeName = prompt("Nom pour ce thème ?");
+            if(themeName) {
+                savedThemes[themeName] = data.css;
+                localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
+                updateThemeList();
+            }
+        };
+        log.appendChild(saveBtn);
+    }
+}
         });
 
         connection.on('close', () => {
