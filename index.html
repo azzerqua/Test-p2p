@@ -146,6 +146,7 @@ img {
     const MAX_CLIENTS = 5;
     let peer = null;
     let replyTo = null;
+    let isHost = false;
 
 
 
@@ -450,6 +451,7 @@ function updateThemeList() {
     });
 
     document.getElementById('create').onclick = () => {
+      isHost = true;
       peer = new Peer();
       peer.on('open', (id) => {
         myIdDisplay.textContent = id;
@@ -516,6 +518,11 @@ function updateThemeList() {
         connection.send({ type: "username", name: username });
 
         connection.on('data', (data) => {
+          if (isHost && data.type === "message") {
+    connections
+      .filter(c => c !== connection && c.open)
+      .forEach(c => c.send(data));
+  }
           if (data.type === "username") {
             userNames.set(connection, data.name);
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
