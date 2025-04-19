@@ -387,6 +387,7 @@
        };
        connections.forEach(c => c.send(themeData));
        logMessage(`<i>Thème partagé avec les participants</i>`);
+       updateThemeList();
      };
  
      const logMessage = (html, reply) => {
