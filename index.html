@@ -479,6 +479,7 @@ function updateThemeList() {
     };
 
     document.getElementById('send').onclick = () => {
+      e.preventDefault();
       const msg = messageInput.value.trim();
       if (!msg) return;
 
@@ -492,9 +493,7 @@ function updateThemeList() {
       connections.forEach(c => c.send(data));
       logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, data.reply);
       messageInput.value = '';
-     setTimeout(() => {
-  messageInput.focus();
-}, 0);
+     messageInput.focus();
     };
     function applyRawCSS(css) {
     styleTag.textContent = css;
@@ -529,7 +528,6 @@ function updateThemeList() {
   }
           if (data.type === "username") {
             userNames.set(connection, data.name);
-            updateThemeList();
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
