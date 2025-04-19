@@ -529,6 +529,7 @@ function updateThemeList() {
   }
           if (data.type === "username") {
             userNames.set(connection, data.name);
+            updateThemeList();
             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
           } else if (data.type === "message") {
             const name = userNames.get(connection) || "Inconnu";
