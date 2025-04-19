@@ -147,6 +147,7 @@ img {
     let peer = null;
     let replyTo = null;
     let isHost = false;
+    updateThemeList();
 
 
 
@@ -485,12 +486,15 @@ function updateThemeList() {
       if (replyTo) {
         data.reply = replyTo;
         cancelReply();
+        
       }
 
       connections.forEach(c => c.send(data));
       logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, data.reply);
       messageInput.value = '';
-      setTimeout(() => messageInput.focus(), 0);
+     setTimeout(() => {
+  messageInput.focus();
+}, 0);
     };
     function applyRawCSS(css) {
     styleTag.textContent = css;
