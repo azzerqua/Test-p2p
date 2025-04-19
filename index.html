@@ -114,6 +114,7 @@
          <!-- Les thèmes sauvegardés seront ajoutés ici dynamiquement -->
        </select>
      <button id="save-theme">Sauvegarder thème</button>
+      <button id="delete-theme">Supprimer thème</button>
      <button id="share-theme">Partager thème</button>
    </div>
   <div class="send">
@@ -493,6 +494,22 @@
        messageInput.value = '';
        setTimeout(() => messageInput.focus(), 0);
      };
+   document.getElementById('delete-theme').onclick = () => {
+  const name = themeSelect.value;
+  if (!savedThemes[name]) {
+    alert("Tu ne peux pas supprimer un thème par défaut.");
+    return;
+  }
+  if (confirm(`Supprimer le thème "${name}" ?`)) {
+    delete savedThemes[name];
+    localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
+    delete themes[name];
+    updateThemeList();
+    applyTheme('light'); // ou n'importe quel thème par défaut
+    alert(`Thème "${name}" supprimé.`);
+  }
+};
+   
      function applyRawCSS(css) {
      styleTag.textContent = css;
      cssEditor.value = css;
