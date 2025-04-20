@@ -128,6 +128,14 @@
      <button id="toggle-css-editor">Modifier le CSS</button>
      <textarea id="css-editor" style="display:none;width:100%;height:150px;margin-top:1rem;"></textarea>
    </div>
+   
+   <div id="mini-browser-container" style="margin-top:1rem;">
+  <input id="link-name" placeholder="Nom du lien" style="width:30%;" />
+  <input id="link-url" placeholder="https://..." style="width:60%;" />
+  <button id="preview-link">Prévisualiser</button>
+  <button id="send-link">Envoyer le lien</button>
+  <iframe id="mini-browser" style="width:100%; height:300px; margin-top:0.5rem; border:1px solid #ccc;"></iframe>
+</div>
  
    <pre id="log"></pre>
  
@@ -150,6 +158,31 @@
      let isHost = false;
  
  
+
+const miniBrowser = document.getElementById("mini-browser");
+const linkUrlInput = document.getElementById("link-url");
+const linkNameInput = document.getElementById("link-name");
+
+document.getElementById("preview-link").onclick = () => {
+  const url = linkUrlInput.value.trim();
+  if (!url.startsWith("http")) {
+    alert("Lien invalide.");
+    return;
+  }
+  miniBrowser.src = url;
+};
+
+document.getElementById("send-link").onclick = () => {
+  const url = linkUrlInput.value.trim();
+  const name = linkNameInput.value.trim() || url;
+  if (!url.startsWith("http")) {
+    alert("Lien invalide.");
+    return;
+  }
+
+  messageInput.value = `[link:${name}|${url}]`;
+  messageInput.focus();
+};
  
          // Thèmes prédéfinis
          const themes = {
@@ -422,10 +455,19 @@
      };
  
      const formatMessage = (text) => {
+      text = text.replace(/\[link:([^\|\]]+)\|([^\]]+)\]/g, (_, name, url) => {
+  return `<a href="#" onclick="openInMiniBrowser('${url}')">${name}</a>`;
+});
        return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
          return `<span style="color:${color}">${content}</span>`;
        });
      };
+   
+   window.openInMiniBrowser = (url) => {
+  document.getElementById("link-url").value = url;
+  document.getElementById("link-name").value = url;
+  document.getElementById("mini-browser").src = url;
+};
  
      // Charger les thèmes sauvegardés depuis le localStorage
  const savedThemes = JSON.parse(localStorage.getItem('savedThemes') || '{}');
