@@ -131,6 +131,15 @@
    
  
    <pre id="log"></pre>
+   
+   <div style="padding: 1rem;">
+  <h3>drwigga</h3>
+  <canvas id="draw-canvas" width="600" height="400" style="border:1px solid #ccc;"></canvas>
+  <div>
+    <button id="clear-canvas">Effacer</button>
+    <button id="save-canvas">Sauvegarder</button>
+  </div>
+</div>
  
    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
    <script>
@@ -149,7 +158,52 @@
      let peer = null;
      let replyTo = null;
      let isHost = false;
- 
+ const canvas = document.getElementById("draw-canvas");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+
+canvas.addEventListener("mousedown", e => {
+  drawing = true;
+  const pos = getMousePos(canvas, e);
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!drawing) return;
+  const pos = getMousePos(canvas, e);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  sendToPeers({ type: "draw", x: pos.x, y: pos.y });
+});
+
+canvas.addEventListener("mouseup", () => drawing = false);
+canvas.addEventListener("mouseout", () => drawing = false);
+
+document.getElementById("clear-canvas").onclick = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  sendToPeers({ type: "clearCanvas" });
+};
+
+document.getElementById("save-canvas").onclick = () => {
+  const img = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = img;
+  link.download = "dessin.png";
+  link.click();
+};
+
+function getMousePos(canvas, evt) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: evt.clientX - rect.left,
+    y: evt.clientY - rect.top
+  };
+}
+
+function sendToPeers(data) {
+  connections.forEach(c => c.send(data));
+}
  
 
  
@@ -555,6 +609,13 @@
              const img = document.createElement("img");
              img.src = data.data;
              log.appendChild(img);
+          }else if (data.type === "draw") {
+  ctx.lineTo(data.x, data.y);
+  ctx.stroke();
+}
+else if (data.type === "clearCanvas") {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
            } else if (data.type === "theme") {
      if(confirm(`${data.sender} vous envoie un thème. Appliquer maintenant ?`)) {
          applyRawCSS(data.css);
