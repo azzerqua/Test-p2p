@@ -134,7 +134,7 @@
    
    <div style="padding: 1rem;">
   <h3>drwigga</h3>
-  <canvas id="draw-canvas" width="600" height="400" style="border:1px solid #ccc;"></canvas>
+  <canvas id="draw-canvas" width="300" height="500" style="border:1px solid #ccc;"></canvas>
   <div>
     <button id="clear-canvas">Effacer</button>
     <button id="save-canvas">Sauvegarder</button>
@@ -205,6 +205,35 @@ function sendToPeers(data) {
   connections.forEach(c => c.send(data));
 }
  
+canvas.addEventListener("touchstart", e => {
+  e.preventDefault();
+  drawing = true;
+  const touch = e.touches[0];
+  const pos = getTouchPos(canvas, touch);
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+});
+
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+  if (!drawing) return;
+  const touch = e.touches[0];
+  const pos = getTouchPos(canvas, touch);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  sendToPeers({ type: "draw", x: pos.x, y: pos.y });
+});
+
+canvas.addEventListener("touchend", () => drawing = false);
+canvas.addEventListener("touchcancel", () => drawing = false);
+
+function getTouchPos(canvas, touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}
 
  
          // Thèmes prédéfinis
