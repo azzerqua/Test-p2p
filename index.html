@@ -134,7 +134,7 @@
    <pre id="log"></pre>
    
    <div id="whiteboard-container" style="margin-top:1rem;">
-  <canvas id="whiteboard" width="800" height="400" style="border:1px solid #ccc; touch-action: none;"></canvas>
+  <canvas id="whiteboard" width="300" height="600" style="border:1px solid #ccc; touch-action: none;"></canvas>
   <div style="margin-top:0.5rem;">
     <input type="color" id="color-picker" value="#000000" />
     <button id="clear-board">Effacer</button>
@@ -172,7 +172,7 @@ let currentColor = "#000000";
 
 // Resize canvas if needed
 canvas.width = canvas.offsetWidth;
-canvas.height = 400;
+canvas.height = 600;
 
 // Mouse events
 canvas.addEventListener("mousedown", startDraw);
