@@ -129,17 +129,9 @@
      <textarea id="css-editor" style="display:none;width:100%;height:150px;margin-top:1rem;"></textarea>
    </div>
    
+   
  
    <pre id="log"></pre>
-   
-   <div style="padding: 1rem;">
-  <h3>drwigga</h3>
-  <canvas id="draw-canvas" width="300" height="500" style="border:1px solid #ccc;"></canvas>
-  <div>
-    <button id="clear-canvas">Effacer</button>
-    <button id="save-canvas">Sauvegarder</button>
-  </div>
-</div>
  
    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
    <script>
@@ -158,82 +150,9 @@
      let peer = null;
      let replyTo = null;
      let isHost = false;
- const canvas = document.getElementById("draw-canvas");
-const ctx = canvas.getContext("2d");
-let drawing = false;
-
-canvas.addEventListener("mousedown", e => {
-  drawing = true;
-  const pos = getMousePos(canvas, e);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
-});
-
-canvas.addEventListener("mousemove", e => {
-  if (!drawing) return;
-  const pos = getMousePos(canvas, e);
-  ctx.lineTo(pos.x, pos.y);
-  ctx.stroke();
-  sendToPeers({ type: "draw", x: pos.x, y: pos.y });
-});
-
-canvas.addEventListener("mouseup", () => drawing = false);
-canvas.addEventListener("mouseout", () => drawing = false);
-
-document.getElementById("clear-canvas").onclick = () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  sendToPeers({ type: "clearCanvas" });
-};
-
-document.getElementById("save-canvas").onclick = () => {
-  const img = canvas.toDataURL("image/png");
-  const link = document.createElement("a");
-  link.href = img;
-  link.download = "dessin.png";
-  link.click();
-};
-
-function getMousePos(canvas, evt) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: evt.clientX - rect.left,
-    y: evt.clientY - rect.top
-  };
-}
-
-function sendToPeers(data) {
-  connections.forEach(c => c.send(data));
-}
  
-canvas.addEventListener("touchstart", e => {
-  e.preventDefault();
-  drawing = true;
-  const touch = e.touches[0];
-  const pos = getTouchPos(canvas, touch);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
-});
+ 
 
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  if (!drawing) return;
-  const touch = e.touches[0];
-  const pos = getTouchPos(canvas, touch);
-  ctx.lineTo(pos.x, pos.y);
-  ctx.stroke();
-  sendToPeers({ type: "draw", x: pos.x, y: pos.y });
-});
-
-canvas.addEventListener("touchend", () => drawing = false);
-canvas.addEventListener("touchcancel", () => drawing = false);
-
-function getTouchPos(canvas, touch) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: touch.clientX - rect.left,
-    y: touch.clientY - rect.top
-  };
-}
 
  
          // Thèmes prédéfinis
@@ -507,12 +426,19 @@ function getTouchPos(canvas, touch) {
      };
  
      const formatMessage = (text) => {
+      text = text.replace(/\[link:([^\|\]]+)\|([^\]]+)\]/g, (_, name, url) => {
+  return `<a href="#" onclick="openInMiniBrowser('${url}')">${name}</a>`;
+});
        return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
          return `<span style="color:${color}">${content}</span>`;
        });
      };
    
-
+   window.openInMiniBrowser = (url) => {
+  document.getElementById("link-url").value = url;
+  document.getElementById("link-name").value = url;
+  document.getElementById("mini-browser").src = url;
+};
  
      // Charger les thèmes sauvegardés depuis le localStorage
  const savedThemes = JSON.parse(localStorage.getItem('savedThemes') || '{}');
@@ -638,13 +564,6 @@ function getTouchPos(canvas, touch) {
              const img = document.createElement("img");
              img.src = data.data;
              log.appendChild(img);
-          }else if (data.type === "draw") {
-  ctx.lineTo(data.x, data.y);
-  ctx.stroke();
-}
-else if (data.type === "clearCanvas") {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
            } else if (data.type === "theme") {
      if(confirm(`${data.sender} vous envoie un thème. Appliquer maintenant ?`)) {
          applyRawCSS(data.css);
