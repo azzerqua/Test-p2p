@@ -128,16 +128,22 @@
      <button id="toggle-css-editor">Modifier le CSS</button>
      <textarea id="css-editor" style="display:none;width:100%;height:150px;margin-top:1rem;"></textarea>
    </div>
-   
+   <div id="call-container" style="position:fixed; bottom:150px; left:0; width:100%; background:#eee; padding:1rem; display:none; flex-direction:column; align-items:center;">
+  <div id="call-status">Aucun appel</div>
+  <button id="call-action">Appeler</button>
+  <button id="mute-toggle" style="display:none;">Mute</button>
+  <button id="hangup" style="display:none;">Raccrocher</button>
+</div>
    
  
    <pre id="log"></pre>
    
    <div id="whiteboard-container" style="margin-top:1rem;">
-  <canvas id="whiteboard" width="300" height="600" style="border:1px solid #ccc; touch-action: none;"></canvas>
+  <canvas id="whiteboard" width="300" height="600" style="border:1px solid #ccc; touch-action: none; background: #f8f8f8;"></canvas>
   <div style="margin-top:0.5rem;">
     <input type="color" id="color-picker" value="#000000" />
     <button id="clear-board">Effacer</button>
+   <button id="download-board">Télécharger</button>
   </div>
 </div>
  
@@ -236,6 +242,68 @@ document.getElementById("clear-board").onclick = () => {
 
 colorPicker.oninput = (e) => currentColor = e.target.value;
 
+
+document.getElementById("download-board").onclick = () => {
+  const link = document.createElement('a');
+  link.download = 'dessin.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+};
+
+
+
+
+
+
+
+let currentCall = null;
+let localStream = null;
+
+const callContainer = document.getElementById("call-container");
+const callStatus = document.getElementById("call-status");
+const callAction = document.getElementById("call-action");
+const hangupBtn = document.getElementById("hangup");
+const muteToggle = document.getElementById("mute-toggle");
+
+callAction.onclick = async () => {
+  if (!connections.length) return alert("Pas de destinataire !");
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  localStream = stream;
+
+  connections.forEach(conn => {
+    peer.call(conn.peer, stream);
+    conn.send({ type: "call-invite", from: username });
+  });
+
+  startCallUI();
+};
+
+hangupBtn.onclick = () => {
+  if (currentCall) currentCall.close();
+  endCallUI();
+};
+
+muteToggle.onclick = () => {
+  const track = localStream.getAudioTracks()[0];
+  track.enabled = !track.enabled;
+  muteToggle.textContent = track.enabled ? "Mute" : "Unmute";
+};
+
+function startCallUI() {
+  callContainer.style.display = "flex";
+  callStatus.textContent = "En appel...";
+  callAction.style.display = "none";
+  hangupBtn.style.display = "inline-block";
+  muteToggle.style.display = "inline-block";
+}
+
+function endCallUI() {
+  callContainer.style.display = "flex";
+  callStatus.textContent = "Aucun appel";
+  callAction.style.display = "inline-block";
+  hangupBtn.style.display = "none";
+  muteToggle.style.display = "none";
+}
 
 
 
@@ -560,6 +628,24 @@ colorPicker.oninput = (e) => currentColor = e.target.value;
          myIdDisplay.textContent = id;
          logMessage(`<i>Ton ID: ${id}</i>`);
        });
+      
+      peer.on("call", async (call) => {
+  const confirmJoin = confirm("Tu reçois un appel, rejoindre ?");
+  if (!confirmJoin) return;
+
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  localStream = stream;
+
+  call.answer(stream);
+  call.on("stream", (remoteStream) => {
+    const audio = new Audio();
+    audio.srcObject = remoteStream;
+    audio.play();
+  });
+
+  currentCall = call;
+  startCallUI();
+});
  
        peer.on('connection', (connection) => {
          if (connections.length >= MAX_CLIENTS - 1) {
@@ -652,7 +738,9 @@ colorPicker.oninput = (e) => currentColor = e.target.value;
              const img = document.createElement("img");
              img.src = data.data;
              log.appendChild(img);
-           } else if (data.type === "draw") {
+           } else if (data.type === "call-invite") {
+  logMessage(`<i>${data.from} t'appelle. Clique sur "Appeler" pour répondre.</i>`);
+}else if (data.type === "draw") {
   drawTo(data.x, data.y, data.isDragging, data.color, false);
 } else if (data.type === "clear-draw") {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
