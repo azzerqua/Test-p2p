@@ -132,6 +132,14 @@
    
  
    <pre id="log"></pre>
+   
+   <div id="whiteboard-container" style="margin-top:1rem;">
+  <canvas id="whiteboard" width="800" height="400" style="border:1px solid #ccc; touch-action: none;"></canvas>
+  <div style="margin-top:0.5rem;">
+    <input type="color" id="color-picker" value="#000000" />
+    <button id="clear-board">Effacer</button>
+  </div>
+</div>
  
    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
    <script>
@@ -152,6 +160,86 @@
      let isHost = false;
  
  
+
+
+
+
+const canvas = document.getElementById("whiteboard");
+const ctx = canvas.getContext("2d");
+const colorPicker = document.getElementById("color-picker");
+let drawing = false;
+let currentColor = "#000000";
+
+// Resize canvas if needed
+canvas.width = canvas.offsetWidth;
+canvas.height = 400;
+
+// Mouse events
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mouseup", endDraw);
+canvas.addEventListener("mouseout", endDraw);
+canvas.addEventListener("mousemove", draw);
+
+// Touch events
+canvas.addEventListener("touchstart", (e) => startDraw(e.touches[0]));
+canvas.addEventListener("touchend", endDraw);
+canvas.addEventListener("touchcancel", endDraw);
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  draw(e.touches[0]);
+}, { passive: false });
+
+function startDraw(e) {
+  drawing = true;
+  const pos = getPos(e);
+  drawTo(pos.x, pos.y, false);
+}
+
+function endDraw() {
+  drawing = false;
+}
+
+function draw(e) {
+  if (!drawing) return;
+  const pos = getPos(e);
+  drawTo(pos.x, pos.y, true, currentColor, true); // Send to peers
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function drawTo(x, y, isDragging, color = currentColor, broadcast = false) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  if (isDragging) ctx.lineTo(x, y);
+  else ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.stroke();
+
+  if (broadcast) {
+    const data = {
+      type: "draw",
+      x, y, isDragging, color
+    };
+    connections.forEach(c => c.send(data));
+  }
+}
+
+document.getElementById("clear-board").onclick = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const clearMsg = { type: "clear-draw" };
+  connections.forEach(c => c.send(clearMsg));
+};
+
+colorPicker.oninput = (e) => currentColor = e.target.value;
+
+
+
+
+
 
 
  
@@ -564,7 +652,11 @@
              const img = document.createElement("img");
              img.src = data.data;
              log.appendChild(img);
-           } else if (data.type === "theme") {
+           } else if (data.type === "draw") {
+  drawTo(data.x, data.y, data.isDragging, data.color, false);
+} else if (data.type === "clear-draw") {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}else if (data.type === "theme") {
      if(confirm(`${data.sender} vous envoie un thème. Appliquer maintenant ?`)) {
          applyRawCSS(data.css);
          themeSelect.value = 'default'; // Réinitialise le sélecteur
