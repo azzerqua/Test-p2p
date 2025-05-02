@@ -586,6 +586,15 @@ function endCallUI() {
       text = text.replace(/\[link:([^\|\]]+)\|([^\]]+)\]/g, (_, name, url) => {
   return `<a href="#" onclick="openInMiniBrowser('${url}')">${name}</a>`;
 });
+
+ return text
+    .replace(/```(.*?)```/gs, '<pre>$1</pre>') // bloc monospace
+    .replace(/`([^`]+?)`/g, '<code>$1</code>') // monospace inline
+    .replace(/\*(.*?)\*/g, '<b>$1</b>')        // gras
+    .replace(/_(.*?)_/g, '<i>$1</i>')          // italique
+    .replace(/~(.*?)~/g, '<s>$1</s>');
+   
+   
        return text.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_, color, content) => {
          return `<span style="color:${color}">${content}</span>`;
        });
