@@ -600,12 +600,7 @@ function endCallUI() {
        });
      };
    
-   window.openInMiniBrowser = (url) => {
-  document.getElementById("link-url").value = url;
-  document.getElementById("link-name").value = url;
-  document.getElementById("mini-browser").src = url;
-};
- 
+  
      // Charger les thèmes sauvegardés depuis le localStorage
  const savedThemes = JSON.parse(localStorage.getItem('savedThemes') || '{}');
  Object.assign(themes, savedThemes);
