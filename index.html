@@ -1,780 +1,376 @@
 <!DOCTYPE html>
- <html lang="en">
- <head>
-   <meta charset="UTF-8" />
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-   <title>P2P Chat</title>
-   <style id="dynamic-style">
- body {
-   font-family: sans-serif;
-   background: #f8f8f8;
-   color: #333;
-   margin: 0;
- }
- 
- #log {
-   white-space: pre-wrap;
-   border-top: 1px solid #ccc;
-   background: #fff;
-   padding: 1rem;
-   height: calc(100vh - 250px);
-   overflow-y: auto;
-   display: flex;
-   flex-direction: column;
-   justify-content: flex-end;
-   margin-bottom: 5rem;
- }
- 
- #log > div {
-   margin-bottom: 1rem;
-   position: relative;
- }
- 
- .send {
-   position: fixed;
-   bottom: 0;
-   left: 0;
-   width: 100%;
-   background: #fff;
-   border-top: 1px solid #ccc;
-   padding: 1rem;
-   display: flex;
-   gap: 0.5rem;
-   flex-wrap: wrap;
-   z-index: 10;
- }
- 
- .reply-preview {
-     background: #f5f5f5;
-   padding: 0.5rem;
-   border-left: 2px solid #999;
-   margin-bottom: 0.5rem;
-   font-size: 0.9em;
-   display: flex;
-   justify-content: space-between;
- }
- 
- .reply-preview span {
-   font-weight: bold;
- }
- 
- .reply-preview button {
-     background: none;
-   border: none;
-   cursor: pointer;
- }
- 
- .reply-ref {
-   background: #f0f0f0;
-   padding: 0.4rem;
-   font-size: 0.85rem;
-   border-left: 3px solid #ccc;
-   margin-bottom: 0.3rem;
- }
- 
- .reply-btn {
-     background: none;
-   border: none;
-   color: #666;
-   cursor: pointer;
-   font-size: 0.8em;
-   padding: 0;
-   margin-left: 0.5rem;
- }
- .reply-btn:hover {
-   opacity: 1;
- }
- img {
-   max-width: 150px;
-   display: block;
-   margin-top: 0.5rem;
- }
- 
- 
-   </style>
- </head>
- <body>
-   <h2>P2P Chat (PeerJS)</h2>
- 
-   <div class="co">
-     <button id="create">Créer une connexion</button>
-     <p>Ton ID : <span id="my-id">-</span></p>
-   </div>
- 
-  <div class="join">
-     <input id="peer-id" placeholder="ID " />
-     <button id="connect">Join</button>
-   </div>
-   <div class="theme-controls">
-     <select id="theme-select">
- 
-         <option value="light">Light</option>
-         <option value="dark">Dark</option>
-         <option value="blue">Blue</option>
-         <!-- Les thèmes sauvegardés seront ajoutés ici dynamiquement -->
-       </select>
-     <button id="save-theme">Sauvegarder thème</button>
-      <button id="delete-theme">Supprimer thème</button>
-     <button id="share-theme">Partager thème</button>
-   </div>
-  <div class="send">
-     <div id="reply-preview" class="reply-preview" style="display:none;"></div>
-     <input type="file" id="imgInput" />
-     <input id="message" placeholder="Message..." />
-     <button id="send">Envoyer</button>
-   </div>
- 
-   <div>
-     <button id="toggle-css-editor">Modifier le CSS</button>
-     <textarea id="css-editor" style="display:none;width:100%;height:150px;margin-top:1rem;"></textarea>
-   </div>
-     <button id="call-action">Appeler</button>
-   <div id="call-container" style="position:fixed; bottom:150px; left:0; width:100%; background:#eee; padding:1rem; display:none; flex-direction:column; align-items:center;">
-  <div id="call-status">Aucun appel</div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>P2P Chat</title>
+  <style id="dynamic-style">
+body {
+  font-family: sans-serif;
+  background: #f8f8f8;
+  color: #333;
+  margin: 0;
+}
 
-  <button id="mute-toggle" style="display:none;">Mute</button>
-  <button id="hangup" style="display:none;">Raccrocher</button>
-</div>
-   
- 
-   <pre id="log"></pre>
-   
-   <div id="whiteboard-container" style="margin-top:1rem;">
-  <canvas id="whiteboard" width="300" height="600" style="border:1px solid #ccc; touch-action: none; background: #f8f8f8;"></canvas>
-  <div style="margin-top:0.5rem;">
-    <input type="color" id="color-picker" value="#000000" />
-    <button id="clear-board">Effacer</button>
-   <button id="download-board">Télécharger</button>
+#log {
+  white-space: pre-wrap;
+  border-top: 1px solid #ccc;
+  background: #fff;
+  padding: 1rem;
+  height: calc(100vh - 250px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: 5rem;
+}
+
+#log > div {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.send {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  z-index: 10;
+}
+
+.reply-preview {
+    background: #f5f5f5;
+  padding: 0.5rem;
+  border-left: 2px solid #999;
+  margin-bottom: 0.5rem;
+  font-size: 0.9em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.reply-preview span {
+  font-weight: bold;
+}
+
+.reply-preview button {
+    background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.reply-ref {
+  background: #f0f0f0;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border-left: 3px solid #ccc;
+  margin-bottom: 0.3rem;
+}
+
+.reply-btn {
+    background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.8em;
+  padding: 0;
+  margin-left: 0.5rem;
+}
+.reply-btn:hover {
+  opacity: 1;
+}
+img {
+  max-width: 150px;
+  display: block;
+  margin-top: 0.5rem;
+}
+  </style>
+</head>
+<body>
+  <h2>P2P Chat (PeerJS)</h2>
+
+  <div class="co">
+    <button id="create">Créer une connexion</button>
+    <p>Ton ID : <span id="my-id">-</span></p>
   </div>
-</div>
- 
-   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-   <script>
-     const myIdDisplay = document.getElementById('my-id');
-     const log = document.getElementById('log');
-     const messageInput = document.getElementById('message');
-     const cssEditor = document.getElementById('css-editor');
-     const styleTag = document.getElementById('dynamic-style');
-     const replyPreview = document.getElementById('reply-preview');
-     const themeSelect = document.getElementById('theme-select');
- 
-     const username = prompt("Username ?");
-     const connections = [];
-     const userNames = new Map();
-     const MAX_CLIENTS = 5;
-     let peer = null;
-     let replyTo = null;
-     let isHost = false;
- 
- 
 
+  <div class="join">
+    <input id="peer-id" placeholder="ID " />
+    <button id="connect">Join</button>
+  </div>
 
+  <div class="theme-controls">
+    <select id="theme-select">
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="blue">Blue</option>
+      <!-- thèmes personnalisés ajoutés dynamiquement -->
+    </select>
+    <button id="save-theme">Sauvegarder thème</button>
+    <button id="share-theme">Partager thème</button>
+  </div>
 
+  <div class="send">
+    <div id="reply-preview" class="reply-preview" style="display:none;"></div>
+    <input type="file" id="imgInput" />
+    <input id="message" placeholder="Message..." />
+    <button id="send">Envoyer</button>
+  </div>
 
-const canvas = document.getElementById("whiteboard");
-const ctx = canvas.getContext("2d");
-const colorPicker = document.getElementById("color-picker");
-let drawing = false;
-let currentColor = "#000000";
+  <div>
+    <button id="toggle-css-editor">Modifier le CSS</button>
+    <textarea id="css-editor" style="display:none;width:100%;height:150px;margin-top:1rem;"></textarea>
+  </div>
 
-// Resize canvas if needed
-canvas.width = canvas.offsetWidth;
-canvas.height = 600;
+  <pre id="log"></pre>
 
-// Mouse events
-canvas.addEventListener("mousedown", startDraw);
-canvas.addEventListener("mouseup", endDraw);
-canvas.addEventListener("mouseout", endDraw);
-canvas.addEventListener("mousemove", draw);
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script>
+    const myIdDisplay     = document.getElementById('my-id');
+    const log             = document.getElementById('log');
+    const messageInput    = document.getElementById('message');
+    const cssEditor       = document.getElementById('css-editor');
+    const styleTag        = document.getElementById('dynamic-style');
+    const replyPreview    = document.getElementById('reply-preview');
+    const themeSelect     = document.getElementById('theme-select');
+    const saveThemeBtn    = document.getElementById('save-theme');
+    const shareThemeBtn   = document.getElementById('share-theme');
+    const sendBtn         = document.getElementById('send');
 
-// Touch events
-canvas.addEventListener("touchstart", (e) => startDraw(e.touches[0]));
-canvas.addEventListener("touchend", endDraw);
-canvas.addEventListener("touchcancel", endDraw);
-canvas.addEventListener("touchmove", (e) => {
-  e.preventDefault();
-  draw(e.touches[0]);
-}, { passive: false });
+    const username    = prompt("Username ?");
+    const connections = [];
+    const userNames   = new Map();
+    const MAX_CLIENTS = 5;
+    let peer          = null;
+    let replyTo       = null;
+    let isHost        = false;
 
-function startDraw(e) {
-  drawing = true;
-  const pos = getPos(e);
-  drawTo(pos.x, pos.y, false);
-}
-
-function endDraw() {
-  drawing = false;
-}
-
-function draw(e) {
-  if (!drawing) return;
-  const pos = getPos(e);
-  drawTo(pos.x, pos.y, true, currentColor, true); // Send to peers
-}
-
-function getPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-
-function drawTo(x, y, isDragging, color = currentColor, broadcast = false) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  if (isDragging) ctx.lineTo(x, y);
-  else ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.stroke();
-
-  if (broadcast) {
-    const data = {
-      type: "draw",
-      x, y, isDragging, color
+    // thèmes prédéfinis
+    const themes = {
+      light: `/* CSS thème Light */\n` + styleTag.textContent,
+      dark: `
+body { font-family: sans-serif; background: #191919; color: #ffffff; margin: 0; }
+#log { background: #191919; border-top:1px solid #474747; }
+.send { background:#191919; border-top:1px solid #3a3a3a; }
+.reply-preview { background:#000; border-left-color:#656565; }
+.reply-ref { background:#555; border-left-color:#252525; color:#fff; }
+.reply-btn { color:#fff; }
+`,
+      blue: `
+body { background: #e3f2fd; color: #0d47a1; }
+#log { background: #bbdefb; }
+.send { background: #90caf9; }
+.reply-preview { background: #64b5f6; }
+`
     };
-    connections.forEach(c => c.send(data));
-  }
-}
 
-document.getElementById("clear-board").onclick = () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const clearMsg = { type: "clear-draw" };
-  connections.forEach(c => c.send(clearMsg));
-};
+    // Charger les thèmes sauvegardés
+    const savedThemes = JSON.parse(localStorage.getItem('savedThemes') || '{}');
+    Object.assign(themes, savedThemes);
 
-colorPicker.oninput = (e) => currentColor = e.target.value;
+    function updateThemeList() {
+      themeSelect.innerHTML = `
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="blue">Blue</option>
+        ${Object.keys(savedThemes).map(name =>
+          `<option value="${name}"${name===currentThemeName?' selected':''}>${name}</option>`
+        ).join('')}
+      `;
+    }
 
-
-document.getElementById("download-board").onclick = () => {
-  const link = document.createElement('a');
-  link.download = 'dessin.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-};
-
-
-
-
-
-
-
-let currentCall = null;
-let localStream = null;
-
-const callContainer = document.getElementById("call-container");
-const callStatus = document.getElementById("call-status");
-const callAction = document.getElementById("call-action");
-const hangupBtn = document.getElementById("hangup");
-const muteToggle = document.getElementById("mute-toggle");
-
-callAction.onclick = async () => {
-  if (!connections.length) return alert("Pas de destinataire !");
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  localStream = stream;
-
-  connections.forEach(conn => {
-    peer.call(conn.peer, stream);
-    conn.send({ type: "call-invite", from: username });
-  });
-
-  startCallUI();
-};
-
-hangupBtn.onclick = () => {
-  if (currentCall) currentCall.close();
-  endCallUI();
-};
-
-muteToggle.onclick = () => {
-  const track = localStream.getAudioTracks()[0];
-  track.enabled = !track.enabled;
-  muteToggle.textContent = track.enabled ? "Mute" : "Unmute";
-};
-
-function startCallUI() {
-  callContainer.style.display = "flex";
-  callStatus.textContent = "En appel...";
-  callAction.style.display = "none";
-  hangupBtn.style.display = "inline-block";
-  muteToggle.style.display = "inline-block";
-}
-
-function endCallUI() {
-  callContainer.style.display = "flex";
-  callStatus.textContent = "Aucun appel";
-  callAction.style.display = "inline-block";
-  hangupBtn.style.display = "none";
-  muteToggle.style.display = "none";
-}
-
-
-
-
-
-
- 
-         // Thèmes prédéfinis
-         const themes = {
-       light: `
- body {
-   font-family: sans-serif;
-   background: #f8f8f8;
-   color: #333;
- }
- 
- #log {
-   white-space: pre-wrap;
-   border-top: 1px solid #ccc;
-   background: #fff;
-   padding: 1rem;
-   height: calc(100vh - 250px);
-   overflow-y: auto;
-   display: flex;
-   flex-direction: column;
-   justify-content: flex-end;
-   margin-bottom: 5rem;
- }
- 
- #log > div {
-   margin-bottom: 1rem;
-   position: relative;
- }
- 
- .send {
-   position: fixed;
-   bottom: 0;
-   left: 0;
-   width: 100%;
-   background: #fff;
-   border-top: 1px solid #ccc;
-   padding: 1rem;
-   display: flex;
-   gap: 0.5rem;
-   flex-wrap: wrap;
-   z-index: 10;
- }
- 
- .reply-preview {
-     background: #f5f5f5;
-   padding: 0.5rem;
-   border-left: 2px solid #999;
-   margin-bottom: 0.5rem;
-   font-size: 0.9em;
-   display: flex;
-   justify-content: space-between;
- }
- 
- .reply-preview span {
-   font-weight: bold;
- }
- 
- .reply-preview button {
-     background: none;
-   border: none;
-   cursor: pointer;
- }
- 
- .reply-ref {
-   background: #f0f0f0;
-   padding: 0.4rem;
-   font-size: 0.85rem;
-   border-left: 3px solid #ccc;
-   margin-bottom: 0.3rem;
- }
- 
- .reply-btn {
-     background: none;
-   border: none;
-   color: #666;
-   cursor: pointer;
-   font-size: 0.8em;
-   padding: 0;
-   margin-left: 0.5rem;
- }
- .reply-btn:hover {
-   opacity: 1;
- }
- img {
-   max-width: 150px;
-   display: block;
-   margin-top: 0.5rem;
- }
-       `,
-       dark: `
-         body {
-   font-family: sans-serif;
-   background: #191919;
-   color: #ffffff;
-   margin: 0;
- }
- 
- #log {
-   white-space: pre-wrap;
-   border-top: 1px solid #474747;
-   background: #191919;
-   padding: 1rem;
-   height: calc(100vh - 250px);
-   overflow-y: auto;
-   display: flex;
-   flex-direction: column;
-   justify-content: flex-end;
-   margin-bottom: 5rem;
- }
- 
- #log > div {
-   margin-bottom: 1rem;
-   position: relative;
- }
- 
- .send {
-   position: fixed;
-   bottom: 0;
-   left: 0;
-   width: 100%;
-   background: #191919;
-   border-top: 1px solid #3a3a3a;
-   padding: 1rem;
-   display: flex;
-   gap: 0.5rem;
-   flex-wrap: wrap;
-   z-index: 10;
- }
- 
- .reply-preview {
-     background: #000000;
-   padding: 0.5rem;
-   border-left: 2px solid #656565;
-   margin-bottom: 0.5rem;
-   font-size: 0.9em;
-   display: flex;
-   justify-content: space-between;
- }
- 
- .reply-preview span {
-   font-weight: bold;
- }
- 
- .reply-preview button {
-     background: none;
-   border: none;
-   cursor: pointer;
- }
- 
- .reply-ref {
-   background: #555555;
-   padding: 0.4rem;
-   font-size: 0.85rem;
-   border-left: 3px solid #252525;
-   margin-bottom: 0.3rem;
- }
- 
- .reply-btn {
-     background: none;
-   border: none;
-   color: #ffffff;
-   cursor: pointer;
-   font-size: 0.8em;
-   padding: 0;
-   margin-left: 0.5rem;
- }
- .reply-btn:hover {
-   opacity: 1;
- }
- img {
-   max-width: 150px;
-   display: block;
-   margin-top: 0.5rem;
- }
-       `,
-       blue: `
-         body { background: #e3f2fd; color: #0d47a1; }
-         #log { background: #bbdefb; }
-         .send { background: #90caf9; }
-         .reply-preview { background: #64b5f6; }
-       `
-     };
-     let currentThemeName = 'light'; // Variable pour suivre le thème actuel
-     // Charger le thème sauvegardé
-     const savedTheme = localStorage.getItem('chatTheme');
-     if(savedTheme) {
-       styleTag.textContent = savedTheme;
-       cssEditor.value = savedTheme;
-     }
- 
-     function applyTheme(themeName) {
-   const themeCSS = themes[themeName];
-   if(themeCSS) {
-     styleTag.textContent = themeCSS;
-     cssEditor.value = themeCSS;
-     currentThemeName = themeName;
-     localStorage.setItem('currentTheme', themeName);
-   }
- }
- 
- themeSelect.addEventListener('change', (e) => {
-   const themeName = e.target.value;
-   if(themeName === 'default') return;
-   applyTheme(themeName);
- });
-     function applyRawCSS(css) {
-   styleTag.textContent = css;
-   cssEditor.value = css;
- }
- 
- // Au chargement de la page
- const lastTheme = localStorage.getItem('currentTheme');
- const customCSS = localStorage.getItem('currentCustomCSS');
- if(lastTheme && themes[lastTheme]) {
-     applyTheme(lastTheme);
-     themeSelect.value = lastTheme;
- } else if(customCSS) {
-     applyRawCSS(customCSS);
-     themeSelect.value = 'default';
- }
- document.getElementById('save-theme').onclick = () => {
-   const themeName = prompt("Nom du thème ?");
-   if(themeName) {
-     savedThemes[themeName] = styleTag.textContent;
-     localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
-     themes[themeName] = styleTag.textContent; // Ajout crucial
-     updateThemeList();
-     applyTheme(themeName); // Applique immédiatement le nouveau thème
-   }
- };
- 
-     document.getElementById('share-theme').onclick = () => {
-       const themeData = {
-         type: "theme",
-         css: styleTag.textContent,
-         sender: username
-       };
-       connections.forEach(c => c.send(themeData));
-       logMessage(`<i>Thème partagé avec les participants</i>`);
-       updateThemeList();
-     };
- 
-     const logMessage = (html, reply) => {
-       const div = document.createElement('div');
-       if (reply) {
-         const replyDiv = document.createElement('div');
-         replyDiv.className = "reply-ref";
-         replyDiv.innerHTML = `<b>${reply.name}:</b> ${formatMessage(reply.text)}`;
-         div.appendChild(replyDiv);
-       }
-       div.innerHTML += html;
-       const replyBtn = document.createElement('span');
-       replyBtn.textContent = '⤺';
-       replyBtn.className = 'reply-btn';
-       replyBtn.onclick = () => {
-         replyTo = reply || { name: html.split('</b>')[0].replace("<b>", ""), text: html.split('</b>')[1] || "" };
-         showReplyPreview(replyTo.name, replyTo.text);
-       };
-       div.appendChild(replyBtn);
-       log.appendChild(div);
-       log.scrollTop = log.scrollHeight;
-     };
-     const showReplyPreview = (name, text) => {
-       replyPreview.innerHTML = `<span>${name}:</span> ${formatMessage(text)} <button onclick="cancelReply()">×</button>`;
-       replyPreview.style.display = "block";
-     };
- 
-     window.cancelReply = () => {
-       replyTo = null;
-       replyPreview.style.display = "none";
-     };
- 
-const formatMessage = (text) => {
-  return text
-    .replace(/\[link:([^\|\]]+)\|([^\]]+)\]/g, (_, name, url) => {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>`;
-    })
-    .replace(/```(.*?)```/gs, '<pre>$1</pre>') // bloc monospace
-    .replace(/`([^`]+?)`/g, '<code>$1</code>') // monospace inline
-    .replace(/\*(.*?)\*/g, '<b>$1</b>')        // gras
-    .replace(/_(.*?)_/g, '<i>$1</i>')          // italique
-    .replace(/~(.*?)~/g, '<s>$1</s>')          // barré
-    .replace(/$begin:math:display$(#?[a-zA-Z0-9]+):([^$end:math:display$]+)\]/g, (_, color, content) => {
-      return `<span style="color:${color}">${content}</span>`;
-    });
-};};
-   
-  
-     // Charger les thèmes sauvegardés depuis le localStorage
- const savedThemes = JSON.parse(localStorage.getItem('savedThemes') || '{}');
- Object.assign(themes, savedThemes);
- 
- function updateThemeList() {
-   themeSelect.innerHTML = `
- 
-     <option value="light">Light</option>
-     <option value="dark">Dark</option>
-     <option value="blue">Blue</option>
-     ${Object.keys(savedThemes).map(name => `
-       <option value="${name}" ${name === currentThemeName ? 'selected' : ''}>${name}</option>
-     `).join('')}
-   `;
- }
- 
-     document.getElementById('toggle-css-editor').onclick = () => {
-       cssEditor.style.display = cssEditor.style.display === 'none' ? 'block' : 'none';
-       cssEditor.value = styleTag.textContent;
-     };
- 
-     cssEditor.addEventListener('input', () => {
-       styleTag.textContent = cssEditor.value;
-     });
- 
-     document.getElementById('create').onclick = () => {
-       isHost = true;
-       peer = new Peer();
-       peer.on('open', (id) => {
-         myIdDisplay.textContent = id;
-         logMessage(`<i>Ton ID: ${id}</i>`);
-       });
-      
-      peer.on("call", async (call) => {
-  const confirmJoin = confirm("Tu reçois un appel, rejoindre ?");
-  if (!confirmJoin) return;
-
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  localStream = stream;
-
-  call.answer(stream);
-  call.on("stream", (remoteStream) => {
-    const audio = new Audio();
-    audio.srcObject = remoteStream;
-    audio.play();
-  });
-
-  currentCall = call;
-  startCallUI();
-});
- 
-       peer.on('connection', (connection) => {
-         if (connections.length >= MAX_CLIENTS - 1) {
-           connection.close();
-           logMessage(`<i>Connexion refusée : max atteint.</i>`);
-           return;
-         }
-         setupConnection(connection);
-       });
-     };
- 
-     document.getElementById('connect').onclick = () => {
-       const peerId = document.getElementById('peer-id').value;
-       if (!peer) peer = new Peer();
-       peer.on('open', () => {
-         const conn = peer.connect(peerId);
-         setupConnection(conn);
-       });
-     };
- 
-     document.getElementById('send').onclick = () => {
-       const msg = messageInput.value.trim();
-       if (!msg) return;
- 
-       const data = { type: "message", text: msg };
-       if (replyTo) {
-         data.reply = replyTo;
-         cancelReply();
-       }
- 
-       connections.forEach(c => c.send(data));
-       logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, data.reply);
-       messageInput.value = '';
-       setTimeout(() => messageInput.focus(), 0);
-     };
-   document.getElementById('delete-theme').onclick = () => {
-  const name = themeSelect.value;
-  if (!savedThemes[name]) {
-    alert("Tu ne peux pas supprimer un thème par défaut.");
-    return;
-  }
-  if (confirm(`Supprimer le thème "${name}" ?`)) {
-    delete savedThemes[name];
-    localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
-    delete themes[name];
+    // appel au démarrage
     updateThemeList();
-    applyTheme('light'); // ou n'importe quel thème par défaut
-    alert(`Thème "${name}" supprimé.`);
-  }
-};
-   
-     function applyRawCSS(css) {
-     styleTag.textContent = css;
-     cssEditor.value = css;
-     localStorage.setItem('currentCustomCSS', css); // Nouveau stockage spécifique
- }
- 
-     document.getElementById("imgInput").addEventListener("change", (event) => {
-       const file = event.target.files[0];
-       if (!file) return;
-       const reader = new FileReader();
-       reader.onload = () => {
-         const base64 = reader.result;
-         connections.forEach(c => c.send({ type: "image", data: base64 }));
-         const img = document.createElement("img");
-         img.src = base64;
-         log.appendChild(img);
-       };
-       reader.readAsDataURL(file);
-     });
- 
-     function setupConnection(connection) {
-       connection.on('open', () => {
-         connections.push(connection);
-         connection.send({ type: "username", name: username });
- 
-         connection.on('data', (data) => {
-           if (isHost && data.type === "message") {
-     connections
-       .filter(c => c !== connection && c.open)
-       .forEach(c => c.send(data));
-   }
-           if (data.type === "username") {
-             userNames.set(connection, data.name);
-             logMessage(`<i>${data.name} a rejoint la conversation</i>`);
-           } else if (data.type === "message") {
-             const name = userNames.get(connection) || "Inconnu";
-             logMessage(`<b>${name}:</b> ${formatMessage(data.text)}`, data.reply);
-           } else if (data.type === "image") {
-             const img = document.createElement("img");
-             img.src = data.data;
-             log.appendChild(img);
-           } else if (data.type === "call-invite") {
-  logMessage(`<i>${data.from} t'appelle. Clique sur "Appeler" pour répondre.</i>`);
-}else if (data.type === "draw") {
-  drawTo(data.x, data.y, data.isDragging, data.color, false);
-} else if (data.type === "clear-draw") {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}else if (data.type === "theme") {
-     if(confirm(`${data.sender} vous envoie un thème. Appliquer maintenant ?`)) {
-         applyRawCSS(data.css);
-         themeSelect.value = 'default'; // Réinitialise le sélecteur
-         alert('Thème appliqué ! Vous pouvez le sauvegarder avec "Sauvegarder thème"');
-     } else {
-         const saveBtn = document.createElement('button');
-         saveBtn.textContent = 'Sauvegarder le thème reçu';
-         saveBtn.onclick = () => {
-             const themeName = prompt("Nom pour ce thème ?");
-             if(themeName) {
-                 savedThemes[themeName] = data.css;
-                 localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
-                 updateThemeList();
-             }
-         };
-         log.appendChild(saveBtn);
-     }
- }
-         });
- 
-         connection.on('close', () => {
-           const name = userNames.get(connection) || "Un utilisateur";
-           logMessage(`<i>${name} s'est déconnecté.</i>`);
-           userNames.delete(connection);
-           connections.splice(connections.indexOf(connection), 1);
-         });
-       });
-     }
-   </script>
- </body>
- </html>
+
+    let currentThemeName = localStorage.getItem('currentTheme') || 'light';
+    // appliquer au chargement
+    applyTheme(currentThemeName);
+    themeSelect.value = currentThemeName;
+
+    function applyTheme(name) {
+      const css = themes[name];
+      if (!css) return;
+      styleTag.textContent  = css;
+      cssEditor.value       = css;
+      currentThemeName      = name;
+      localStorage.setItem('currentTheme', name);
+    }
+    function applyRawCSS(css) {
+      styleTag.textContent  = css;
+      cssEditor.value       = css;
+      localStorage.setItem('currentCustomCSS', css);
+    }
+
+    themeSelect.addEventListener('change', e => {
+      applyTheme(e.target.value);
+    });
+
+    saveThemeBtn.onclick = () => {
+      const name = prompt("Nom du thème ?");
+      if (!name) return;
+      savedThemes[name] = styleTag.textContent;
+      localStorage.setItem('savedThemes', JSON.stringify(savedThemes));
+      themes[name] = styleTag.textContent;
+      updateThemeList();
+      applyTheme(name);
+    };
+
+    shareThemeBtn.onclick = () => {
+      const data = { type:'theme', css:styleTag.textContent, sender:username };
+      connections.forEach(c => c.send(data));
+      logMessage(`<i>Thème partagé avec les participants</i>`);
+    };
+
+    // éditeur CSS
+    document.getElementById('toggle-css-editor').onclick = () => {
+      const show = cssEditor.style.display === 'none';
+      cssEditor.style.display = show ? 'block' : 'none';
+      cssEditor.value = styleTag.textContent;
+    };
+    cssEditor.addEventListener('input', () => {
+      applyRawCSS(cssEditor.value);
+    });
+
+    // log & replies
+    function logMessage(html, reply) {
+      const div = document.createElement('div');
+      if (reply) {
+        const r = document.createElement('div');
+        r.className = 'reply-ref';
+        r.innerHTML = `<b>${reply.name}:</b> ${formatMessage(reply.text)}`;
+        div.appendChild(r);
+      }
+      div.innerHTML += html;
+      const btn = document.createElement('button');
+      btn.className = 'reply-btn';
+      btn.textContent = '⤺';
+      btn.onclick = () => {
+        replyTo = reply || { name: html.split('</b>')[0].replace('<b>',''), text: html.split('</b>')[1]||'' };
+        showReplyPreview(replyTo.name, replyTo.text);
+      };
+      div.appendChild(btn);
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+    function showReplyPreview(name, text) {
+      replyPreview.innerHTML = `<span>${name}:</span> ${formatMessage(text)}<button onclick="cancelReply()">×</button>`;
+      replyPreview.style.display = 'flex';
+    }
+    window.cancelReply = () => {
+      replyTo = null;
+      replyPreview.style.display = 'none';
+    }
+    function formatMessage(txt) {
+      return txt.replace(/\[(#?[a-zA-Z0-9]+):([^\]]+)\]/g, (_,c,t) =>
+        `<span style="color:${c}">${t}</span>`
+      );
+    }
+
+    // connexion P2P
+    document.getElementById('create').onclick = () => {
+      isHost = true;
+      peer = new Peer();
+      peer.on('open', id => {
+        myIdDisplay.textContent = id;
+        logMessage(`<i>Ton ID: ${id}</i>`);
+      });
+      peer.on('connection', conn => {
+        if (connections.length >= MAX_CLIENTS-1) {
+          conn.close();
+          logMessage(`<i>Connexion refusée : max atteint.</i>`);
+          return;
+        }
+        setupConnection(conn);
+      });
+    };
+    document.getElementById('connect').onclick = () => {
+      const peerId = document.getElementById('peer-id').value;
+      if (!peer) peer = new Peer();
+      peer.on('open', () => {
+        const conn = peer.connect(peerId);
+        setupConnection(conn);
+      });
+    };
+
+    // Envoi de message (touchstart + click pour iOS)
+    function doSend(e) {
+      e.preventDefault();
+      const msg = messageInput.value.trim();
+      if (!msg) return;
+      const data = { type:'message', text:msg };
+      if (replyTo) { data.reply = replyTo; cancelReply(); }
+      connections.forEach(c => c.send(data));
+      logMessage(`<b>${username}:</b> ${formatMessage(msg)}`, data.reply);
+      messageInput.value = '';
+      setTimeout(() => messageInput.focus(), 0);
+    }
+    sendBtn.addEventListener('touchstart', doSend);
+    sendBtn.addEventListener('click',     doSend);
+
+    // Image upload
+    document.getElementById('imgInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const data = reader.result;
+        connections.forEach(c => c.send({ type:'image', data }));
+        const img = document.createElement('img');
+        img.src = data;
+        log.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function setupConnection(connection) {
+      connection.on('open', () => {
+        connections.push(connection);
+        connection.send({ type:'username', name:username });
+
+        connection.on('data', data => {
+          if (isHost && data.type==='message') {
+            connections
+              .filter(c=>c!==connection && c.open)
+              .forEach(c=>c.send(data));
+          }
+          switch(data.type) {
+            case 'username':
+              userNames.set(connection,data.name);
+              logMessage(`<i>${data.name} a rejoint la conversation</i>`);
+              break;
+            case 'message':
+              const n = userNames.get(connection)||'Inconnu';
+              logMessage(`<b>${n}:</b> ${formatMessage(data.text)}`, data.reply);
+              break;
+            case 'image':
+              const img = document.createElement('img');
+              img.src = data.data;
+              log.appendChild(img);
+              break;
+            case 'theme':
+              if (confirm(`${data.sender} vous envoie un thème. Appliquer ?`)) {
+                applyRawCSS(data.css);
+                themeSelect.value = currentThemeName;
+                alert('Thème appliqué !');
+              }
+              break;
+          }
+        });
+
+        connection.on('close', () => {
+          const n = userNames.get(connection)||'Un utilisateur';
+          logMessage(`<i>${n} s'est déconnecté.</i>`);
+          userNames.delete(connection);
+          const idx = connections.indexOf(connection);
+          if (idx!==-1) connections.splice(idx,1);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
